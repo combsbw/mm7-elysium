@@ -2275,7 +2275,7 @@ span.r-x, span.r-n, span.r-o, span.r-g, span.r-w, b.r-n, b.r-o { color: var(--c)
 .tc-cvh { font-size: 12.5px; font-weight: 700; color: var(--ink-2); } .tc-cvp { overflow: hidden; max-height: 150px; } .tc-cvp > * { transform: scale(.72); transform-origin: top left; width: 139%; } .tc-cvas { font-size: 13px; }
 @media (max-width: 760px) { .tc-patbody { grid-template-columns: 1fr; } .tc-pathd { grid-template-columns: 36px 1fr; } .tc-th { grid-column: 2; justify-self: start; } }
 
-/* the Dojo: the ten Course Sheet ideas as a focus, and the Traps section (19 Nov 2026) */
+/* the Arena: the ten Course Sheet ideas as a focus, and the Traps section (19 Nov 2026) */
 .dj-ideas { margin-top: 16px; } .dj-ideagrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin-top: 6px; }
 .dj-idea { display: grid; grid-template-columns: 28px 1fr; gap: 2px 8px; text-align: left; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); padding: 8px 10px; font: inherit; cursor: pointer; }
 .dj-idea .i { grid-row: span 2; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); font-weight: 800; font-size: 13px; }
@@ -2327,7 +2327,7 @@ span.r-x, span.r-n, span.r-o, span.r-g, span.r-w, b.r-n, b.r-o { color: var(--c)
       <a class="tab" href="#today" data-nav="today">Today</a>
       <a class="tab" href="#chapters" data-nav="chapters">Chapters</a>
       <a class="tab" href="#reviews" data-nav="reviews"><span class="hb-tlong">Reviews &amp; Exams</span><span class="hb-tshort">Reviews</span></a>
-      <a class="tab" href="#dojo" data-nav="dojo">Dojo</a>
+      <a class="tab" href="#dojo" data-nav="dojo">Arena</a>
       <a class="tab" href="#dashboard" data-nav="dashboard">Dashboard</a>
       <a class="tab" href="#history" data-nav="history">History</a>
     </nav>
@@ -32556,7 +32556,11 @@ var XG = {
  "exam": {
   "quick": null,
   "replaced": [],
-  "first": {},
+  "first": {
+   "F9.1A": 1,
+   "F9.2A": 1,
+   "F9.3A": 1
+  },
   "sessions": [
    {
     "name": "Number and expressions",
@@ -48010,8 +48014,8 @@ var LMS = (function () {
     // evidence
     EV_W0: 0.6, EV_WD: 0.2, EV_HALF: 90, HELP_CREDIT: 0.5, CEIL_DAYS: 45,
     W_TRIAL: 0.5, D_TRIAL: 1.5, D_QUICK: 0.5, W_MODEL: 0.5, W_UNKNOWN_ENTRY: 0.5,
-    // mass (blobs): one skill fully shown = MASS_Q; easy reps (diff < EASY_D: quick reps and the Dojo's easy-number moves) fill a skill only
-    // up to EASY_CAP of them, the rest follows the full-strength evidence. Dojo Superlative: a right answer on a k-skill problem weighs
+    // mass (blobs): one skill fully shown = MASS_Q; easy reps (diff < EASY_D: quick reps and the Arena's easy-number moves) fill a skill only
+    // up to EASY_CAP of them, the rest follows the full-strength evidence. Arena Superlative: a right answer on a k-skill problem weighs
     // SUP_W(k) = min(SUP_MAX, 1 + SUP_STEP·(k − 1)); a miss is spread (SUP_MISS / √k) because it does not say which skill failed.
     MASS_Q: 10, MASS_W0: 3, EASY_D: 1, EASY_CAP: 4, EASY_W0: 5, SUP_STEP: 0.25, SUP_MAX: 1.75, SUP_MISS: 0.8,
     // memory
@@ -48192,7 +48196,7 @@ var LMS = (function () {
           level: a.ref && a.ref.type === 'level' ? lvKey(a.ref.ch, a.ref.key) : null, hyp: a.hypId || null, w: 1 });
       });
     });
-    // --- the Dojo (hub.dojo.sessions): Blob Roll moves and Quest steps are easy-number reps (diff < EASY_D unless the move says otherwise);
+    // --- the Arena (hub.dojo.sessions): Blob Roll moves and Quest steps are easy-number reps (diff < EASY_D unless the move says otherwise);
     // Superlative problems are bank entries at their own tier with the challenge weight.
     var ds = dojoSessions(getItem, hub);
     ds.forEach(function (s) {
@@ -48266,7 +48270,7 @@ var LMS = (function () {
     var we = Ae + Be, easy = K.EASY_CAP * Ae / (we + K.EASY_W0);
     return Math.min(all, full + (1 - full / K.MASS_Q) * easy);
   }
-  // The Dojo's sessions. It is the high-volume part of the record (hundreds of quick answers a day), so it is not kept inside the
+  // The Arena's sessions. It is the high-volume part of the record (hundreds of quick answers a day), so it is not kept inside the
   // hub object, which is parsed and written whole: each day has its own key, 'mm7-dojo-<YYYY-MM-DD>' = { v, sessions:[…] }, and the
   // hub only lists the days (hub.dojo.days). Sessions written inline (hub.dojo.sessions) are read too.
   var DOJO_PREFIX = 'mm7-dojo-';
@@ -48410,7 +48414,7 @@ var LMS = (function () {
   }
   function statusOf(m, v) {
     if (!m || !m.n) return 'Not started';
-    // Secure needs full-strength answers too: easy-number reps alone (quick reps, the Dojo's Blob Roll) leave a skill at Building
+    // Secure needs full-strength answers too: easy-number reps alone (quick reps, the Arena's Blob Roll) leave a skill at Building
     if (v.E >= K.SEC_E && v.W >= K.SEC_W && v.Rnow >= K.DUE_R) return (m.A + m.B) - ((m.Ae || 0) + (m.Be || 0)) >= K.SEC_WF ? 'Secure' : 'Building';
     if (v.E >= K.FADE_E && m.nOK > 0 && m.S !== null && v.Rnow < K.DUE_R) return 'Fading';
     if (v.E < K.BUILD_E && v.W >= K.NEED_W) return 'Needs support';
@@ -51568,19 +51572,19 @@ var TVZ = (function () {
 if (typeof module !== 'undefined' && module.exports) module.exports = TVZ;
 /* ===== TVZ END ===== */
 
-/* ===== FML (the formula registry: one list for the formula bank tiles, the flash cards and the Dojo's formula moves) START =====
+/* ===== FML (the formula registry: one list for the formula bank tiles, the flash cards and the Arena's formula moves) START =====
    Pure data, no DOM. An entry:
      { id, ch, grp, name, f, plain, lit:[lhs, rhs], wrong:[[display, src], …], sk:[catalog ids], leg:[[symbol, word]], ic, of, ask }
      grp    'f' a formula · 'u' an undo rule (what to do to both sides)
      name   what it gives, in a few words (the front of the flash card)
-     f      the formula with roles for colour (TVZ.fmt markup) · plain: the same as plain text (the right tile in the Dojo)
-     lit    the formula as ascii, [left, right]: the Dojo verifier solves it for sample values, so a right tile is proved right
+     f      the formula with roles for colour (TVZ.fmt markup) · plain: the same as plain text (the right tile in the Arena)
+     lit    the formula as ascii, [left, right]: the Arena verifier solves it for sample values, so a right tile is proved right
      wrong  look-alikes that are NOT equivalent, each with the ascii of its right side (the verifier proves each one wrong)
      leg    the letters and what they stand for (tiles; flash-card back)     ic  the tile's icon (TVZ.ICONS)
      of     the id of the formula this one is a rearrangement of (shown on the same tile)
      also   other chapters whose bank shows this formula too (area and cost are first used in Chapter 1)
      an undo rule also has: ask (the equation), lab (a two-word label), st (the rule as a TVZ steps ladder), v + sol (solved for v)
-   Chapters whose tactics are not redrawn yet have name / plain / lit / wrong / sk only: enough for the Dojo.                */
+   Chapters whose tactics are not redrawn yet have name / plain / lit / wrong / sk only: enough for the Arena.                */
 var FML = (function () {
   'use strict';
   var ALL = [], BY = {};
@@ -51668,7 +51672,7 @@ var FML = (function () {
   F('u5', 3, { grp: 'u', lab: 'Undo a fraction', st: [['{f:{n:a}|{n:b}} · x', 'c'], { op: '· {f:b|a}' }, ['x', 'c · {f:b|a}', 'ans']], name: '(a/b) · x = c', ask: '{f:a|b} · x = c', f: '{o:· {f:b|a}}  →  {g:x} = c · {f:b|a}', plain: 'x = c · b/a', lit: ['(a/b)*x', 'c'], v: 'x', sol: 'c*b/a', wrong: [['x = c · a/b', 'c*a/b'], ['x = c − a/b', 'c-a/b'], ['x = c ÷ b', 'c/b']], sk: ['U6'], ic: 'flip' });
   F('u6', 3, { grp: 'u', lab: 'Undo −x', st: [['{n:−}x', 'n'], { op: '· (−1)' }, ['x', '−n', 'ans']], name: '−x = n', ask: '−x = n', f: '{o:· (−1)}  →  {g:x} = −n', plain: 'x = −n', lit: ['-x', 'n'], v: 'x', sol: '-n', wrong: [['x = n', 'n'], ['x = 1 ÷ n', '1/n'], ['x = n − 1', 'n-1']], sk: ['U9'], ic: 'flip' });
 
-  // ---------------------------------------------------------------- Chapter 6 (Dojo only for now)
+  // ---------------------------------------------------------------- Chapter 6 (Arena only for now)
   F('urate', 6, { name: 'Unit rate', f: '{g:unit rate} = {f:{x:amount}|{n:quantity}}', plain: 'amount ÷ quantity', lit: ['k', 'y/x'], wrong: [['quantity ÷ amount', 'x/y'], ['amount · quantity', 'y*x'], ['amount − quantity', 'y-x']], sk: ['P8'], leg: [['per', 'means ÷'], ['quantity', 'the unit after “per”']], ic: 'gauge', move: 'rate.unit' });
   F('ykx', 6, { name: 'A proportional relationship', f: '{g:y} = {o:k} · {x:x}', plain: 'y = k · x', lit: ['y', 'k*x'], wrong: [['y = k + x', 'k+x'], ['y = x ÷ k', 'x/k'], ['y = k · x + 5', 'k*x+5']], sk: ['P16'], leg: [['k', 'the constant: the unit rate'], ['x, y', 'the two quantities']], ic: 'tri', move: 'rate.k' });
   F('xyk', 6, { of: 'ykx', name: 'The quantity, from the amount', f: '{x:x} = {f:{g:y}|{o:k}}', plain: 'x = y ÷ k', lit: ['x', 'y/k'], wrong: [['x = y · k', 'y*k'], ['x = k ÷ y', 'k/y'], ['x = y − k', 'y-k']], sk: ['P16'] });
@@ -53291,7 +53295,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = FML;
      cues   what you see in a problem → the tactic it calls for, drawn; each row links to the chapter cards it comes from
      integ  problems that need two chapters' tactics, stepped through one move at a time on tap
      traps  the slips the group's banks tag most often (the wrong-answer tags of its Review and Exam), the wrong way beside the right
-     dojo   the Dojo focus areas that drill the group, and the chapters whose formula flash cards belong here
+     dojo   the Arena focus areas that drill the group, and the chapters whose formula flash cards belong here
    Every number a picture shows is listed in v or re-computed from the picture (hub/test_tactics.js). */
 (function () {
   'use strict';
@@ -53526,7 +53530,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = FML;
 })();
 
 /* --- dojo: dojo_gens.js --- */
-/* ===== DJG (the Dojo's moves: easy-number, skill-tagged, one-action items; tactic cards; part 1 of 2) START =====
+/* ===== DJG (the Arena's moves: easy-number, skill-tagged, one-action items; tactic cards; part 1 of 2) START =====
    Pure logic, no DOM. Needs MM (kit/engine.js) and H (xr/H.js). Browser global DJG; Node: see hub/test_dojo.js.
 
    A MOVE is one small skill pattern practised with numbers that never get in the way:
@@ -53974,11 +53978,11 @@ var DJG = (function () {
     return out;
   }
   // opts (optional): { el } asks a registry angle (part 6) for one element of the translation registry
-  function raw(id, lv, opts) { var m = BY[id]; if (!m) throw new Error('no Dojo move ' + id); lv = Math.max(1, Math.min(3, lv || 1)); var run = m.gen(lv, opts); run.forEach(function (it, i) { it.move = id; it.lv = lv; it.skills = it.skills || m.skills; it.part = [i + 1, run.length]; }); return run; }
+  function raw(id, lv, opts) { var m = BY[id]; if (!m) throw new Error('no Arena move ' + id); lv = Math.max(1, Math.min(3, lv || 1)); var run = m.gen(lv, opts); run.forEach(function (it, i) { it.move = id; it.lv = lv; it.skills = it.skills || m.skills; it.part = [i + 1, run.length]; }); return run; }
   var rejected = { n: 0, last: null };
   function make(id, lv, opts) {
     for (var i = 0; i < 25; i++) { var run = raw(id, lv, opts), bad = null; run.forEach(function (it) { var p = verify(it); if (p.length && !bad) bad = p[0]; }); if (!bad) return run; rejected.n++; rejected.last = id + ' L' + lv + ': ' + bad; }
-    throw new Error('Dojo move ' + id + ' could not make a verified item (' + rejected.last + ')');
+    throw new Error('Arena move ' + id + ' could not make a verified item (' + rejected.last + ')');
   }
 
   return {
@@ -53990,7 +53994,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = DJG;
 /* ===== DJG part 1 END ===== */
 
 /* --- dojo: dojo_gens2.js --- */
-/* ===== DJG part 2 (the Dojo's moves for Chapters 5–8: two-step equations, inequalities, patterns, rates, percent, geometry) START =====
+/* ===== DJG part 2 (the Arena's moves for Chapters 5–8: two-step equations, inequalities, patterns, rates, percent, geometry) START =====
    Same contract as hub/dojo_gens.js (read its header). Registers its moves with DJG.mv. */
 (function () {
   'use strict';
@@ -55078,7 +55082,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports.TRX = TRX;
   });
   DJG.TRAPS = FAM;
 
-  // ---------------------------------------------------------------- the ten ideas of the Course Sheet (hub/tactics_course.js) as Dojo focus areas
+  // ---------------------------------------------------------------- the ten ideas of the Course Sheet (hub/tactics_course.js) as Arena focus areas
   // Each idea lists the quick moves that practise it in any chapter; its full problems are the Path levels whose Skills & Tactics cards
   // wear its thread (found in the hub from TAC), so a Blob Roll on one idea alternates chapters. hub/test_dojo.js checks every id.
   DJG.IDEA_MOVES = {
@@ -55100,7 +55104,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports.TRX = TRX;
 /* ===== DJG part 8 (Combos: two or three skills joined in one short problem, easy numbers; Stage 11, the full-course review) START =====
    Same contract as hub/dojo_gens.js. A combo is the middle stop of a region of the full-course review (hub/journey.js): after
    the one-action quick shots and before the full-strength summit. Each joins skills from two or three territories of its region,
-   and each is also an ordinary Dojo move (focus area 'combo'), verified like every other one.
+   and each is also an ordinary Arena move (focus area 'combo'), verified like every other one.
    Region 1, Signs and number: signfrac, story, forms, order, apart. Region 2, Expressions: disteval, areaexp, minus, powerord,
    factarea. Region 3, Equations and inequalities: fare, limit, flip, fracof, undocheck. Region 4, Rates, ratios and percent:
    ratetime, pctprop, chain, unitchange, interest, speedk. Region 5, Geometry and measurement: angles, circsq, plan, box, pyth,
@@ -55374,9 +55378,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports.TRX = TRX;
 /* ===== DJG part 8 END ===== */
 
 /* --- dojo: dojo_quests.js --- */
-/* ===== DJG quests (the Dojo's Quest mode: one story, several steps, each step uses the answer of the step before) START =====
+/* ===== DJG quests (the Arena's Quest mode: one story, several steps, each step uses the answer of the step before) START =====
    DJG.quest(id, lv) -> { id, title, intro, outro, nodes:[{ place, item }] }      lv 1 = 3 steps, lv 2 = 4, lv 3 = all of them (5 or 6)
-   Every item is a Dojo item (see hub/dojo_gens.js) with its own skills and VER; item.uses is the text of the earlier answer that
+   Every item is a Arena item (see hub/dojo_gens.js) with its own skills and VER; item.uses is the text of the earlier answer that
    the step's wording must contain (hub/test_dojo_quests.js checks it), so the chain is real and not a list of unrelated questions.
    Stories follow protocol §18: the recurring cast, things that make no sense, numbers that stay friendly. */
 (function () {
@@ -55529,7 +55533,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports.TRX = TRX;
 /* ===== DJG quests END ===== */
 
 /* --- dojo: dojo_core.js --- */
-/* ===== DJ (the Dojo engine: what to serve, belts, the live blob meter; pure logic, no DOM) START =====
+/* ===== DJ (the Arena engine: what to serve, belts, the live blob meter; pure logic, no DOM) START =====
    Needs LMS (hub/lms_model.js) and DJG (hub/dojo_gens*.js, hub/dojo_quests.js). Contract and design: hub/DOJO.md.
 
    WHAT IS SERVED (spaced repetition on the learner model's own memory state; nothing is gated by completion)
@@ -55566,7 +55570,7 @@ var DJ = (function () {
   var MODES = { roll: { name: 'Blob Roll', blurb: 'Fast reps with friendly numbers. The clock drains; every right answer pours some back.' }, quest: { name: 'Quest', blurb: 'One ridiculous story, several steps. Each answer is the key to the next step.' }, sup: { name: 'Superlative', blurb: 'Full-strength problems that use several skills at once, with a multiplier for the challenge.' } };
   var LEVELS = { roll: ['Warm', 'Hot', 'Blazing'], quest: ['Trail (3 steps)', 'Trek (4 steps)', 'Odyssey (6 steps)'], sup: ['Bold', 'Fierce', 'Legendary'] };
 
-  // ---------------------------------------------------------------- routes: every skill has a way into the Dojo
+  // ---------------------------------------------------------------- routes: every skill has a way into the Arena
   var routeCache = { cat: null, map: null };
   function routes(cat) {
     if (routeCache.cat === cat && routeCache.n === DJG.MOVES.length) return routeCache.map;
@@ -55715,7 +55719,7 @@ var DJ = (function () {
     }).sort(function (a, b) { return b.score - a.score; });
   }
 
-  // ---------------------------------------------------------------- the picture for the Dojo home page
+  // ---------------------------------------------------------------- the picture for the Arena home page
   function overview(model, cat, cur) {
     var R0 = routes(cat), o = { due: 0, fading: 0, weak: 0, scout: 0, keep: 0, dueMove: 0, dueKata: 0, styles: {} }, id;
     for (id in cat.skills) { var u = urgency(model, cat, id, cur); o[u.kind]++; if (u.kind === 'due') { if (R0[id].moves.length) o.dueMove++; else o.dueKata++; } }
@@ -55800,17 +55804,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = DJ;
 
 /* --- dojo: journey.js --- */
 /* ===== JRN (the full-course review: a journey by category; Stage 11 of MM7_Course_Completion_Plan.md) START =====
-   Pure logic, no DOM. Needs DJG (the Dojo's moves) and, for urgency, DJ and a learner model (both optional).
+   Pure logic, no DOM. Needs DJG (the Arena's moves) and, for urgency, DJ and a learner model (both optional).
    Six REGIONS cut across the chapters; every one of the 41 territories of the course belongs to exactly one. A region opens with
    its guiding picture (an idea of the Course Sheet) and has three STOPS:
-     quick    one-action reps with easy numbers on the region's foundations (the Dojo's verified moves): every territory first
+     quick    one-action reps with easy numbers on the region's foundations (the Arena's verified moves): every territory first
      combo    easy numbers, two or three skills joined (hub/dojo_gens8.js)
      summit   a few full-strength problems from the verified Review and Exam banks, one territory each
    A last stop (journey 'all', stop 'all') takes one full-strength problem from each region.
    Size: about 100 answers for the whole journey, more than half of them quick shots; one region is one sitting. A region
    with more than nine territories has one quick shot for each (Geometry and measurement: twelve).
    Clean, fast work shortens a stop; a miss adds two more reps on that move and shows its tactic.
-   Evidence: quick shots and combos are easy-number reps (capped, as in the Dojo); summit answers count in full.
+   Evidence: quick shots and combos are easy-number reps (capped, as in the Arena); summit answers count in full.
    hub/test_journey.js prints and gates the coverage table. */
 var JRN = (function () {
   'use strict';
@@ -156021,7 +156025,7 @@ if (typeof module !== 'undefined') module.exports = XR;
   function renderBegin() {
     var box = $('beginBox'), cur = store.current && store.current.status === 'running' ? store.current : null, last = store.attempts[store.attempts.length - 1];
     var h = '';
-    if (SESS && $('bLen')) $('bLen').textContent = 'About 20 to 30 minutes a session for a prepared student, about 20 questions. There is no fixed length: finish a session when its climbs have ended or when you are ready.';
+    if (SESS && $('bLen')) $('bLen').textContent = 'About 35 to 50 minutes a session for a prepared student, 20 to 30 questions. There is no fixed length: finish a session when its climbs have ended or when you are ready.';
     if (SESS && (!cur || cur.sess)) {       // the sessions, with where each one stands
       var kc = cur ? cur.sess.cur : 0;
       h += '<ol class="ex-sess">' + SESS.map(function (s, k) {
@@ -179381,7 +179385,7 @@ if (typeof module !== 'undefined') module.exports = XR;
   function renderBegin() {
     var box = $('beginBox'), cur = store.current && store.current.status === 'running' ? store.current : null, last = store.attempts[store.attempts.length - 1];
     var h = '';
-    if (SESS && $('bLen')) $('bLen').textContent = 'About 20 to 30 minutes a session for a prepared student, about 20 questions. There is no fixed length: finish a session when its climbs have ended or when you are ready.';
+    if (SESS && $('bLen')) $('bLen').textContent = 'About 35 to 50 minutes a session for a prepared student, 20 to 30 questions. There is no fixed length: finish a session when its climbs have ended or when you are ready.';
     if (SESS && (!cur || cur.sess)) {       // the sessions, with where each one stands
       var kc = cur ? cur.sess.cur : 0;
       h += '<ol class="ex-sess">' + SESS.map(function (s, k) {
@@ -202211,7 +202215,7 @@ if (typeof module !== 'undefined') module.exports = XR;
   function renderBegin() {
     var box = $('beginBox'), cur = store.current && store.current.status === 'running' ? store.current : null, last = store.attempts[store.attempts.length - 1];
     var h = '';
-    if (SESS && $('bLen')) $('bLen').textContent = 'About 20 to 30 minutes a session for a prepared student, about 20 questions. There is no fixed length: finish a session when its climbs have ended or when you are ready.';
+    if (SESS && $('bLen')) $('bLen').textContent = 'About 35 to 50 minutes a session for a prepared student, 20 to 30 questions. There is no fixed length: finish a session when its climbs have ended or when you are ready.';
     if (SESS && (!cur || cur.sess)) {       // the sessions, with where each one stands
       var kc = cur ? cur.sess.cur : 0;
       h += '<ol class="ex-sess">' + SESS.map(function (s, k) {
@@ -227164,7 +227168,7 @@ if (typeof module !== 'undefined') module.exports = XR;
   function renderBegin() {
     var box = $('beginBox'), cur = store.current && store.current.status === 'running' ? store.current : null, last = store.attempts[store.attempts.length - 1];
     var h = '';
-    if (SESS && $('bLen')) $('bLen').textContent = 'About 20 to 30 minutes a session for a prepared student, about 20 questions. There is no fixed length: finish a session when its climbs have ended or when you are ready.';
+    if (SESS && $('bLen')) $('bLen').textContent = 'About 35 to 50 minutes a session for a prepared student, 20 to 30 questions. There is no fixed length: finish a session when its climbs have ended or when you are ready.';
     if (SESS && (!cur || cur.sess)) {       // the sessions, with where each one stands
       var kc = cur ? cur.sess.cur : 0;
       h += '<ol class="ex-sess">' + SESS.map(function (s, k) {
@@ -255055,7 +255059,7 @@ if (typeof module !== 'undefined') module.exports = XR;
   function renderBegin() {
     var box = $('beginBox'), cur = store.current && store.current.status === 'running' ? store.current : null, last = store.attempts[store.attempts.length - 1];
     var h = '';
-    if (SESS && $('bLen')) $('bLen').textContent = 'About 20 to 30 minutes a session for a prepared student, about 20 questions. There is no fixed length: finish a session when its climbs have ended or when you are ready.';
+    if (SESS && $('bLen')) $('bLen').textContent = 'About 35 to 50 minutes a session for a prepared student, 20 to 30 questions. There is no fixed length: finish a session when its climbs have ended or when you are ready.';
     if (SESS && (!cur || cur.sess)) {       // the sessions, with where each one stands
       var kc = cur ? cur.sess.cur : 0;
       h += '<ol class="ex-sess">' + SESS.map(function (s, k) {
@@ -255483,8 +255487,8 @@ var LMS = (function () {
     // evidence
     EV_W0: 0.6, EV_WD: 0.2, EV_HALF: 90, HELP_CREDIT: 0.5, CEIL_DAYS: 45,
     W_TRIAL: 0.5, D_TRIAL: 1.5, D_QUICK: 0.5, W_MODEL: 0.5, W_UNKNOWN_ENTRY: 0.5,
-    // mass (blobs): one skill fully shown = MASS_Q; easy reps (diff < EASY_D: quick reps and the Dojo's easy-number moves) fill a skill only
-    // up to EASY_CAP of them, the rest follows the full-strength evidence. Dojo Superlative: a right answer on a k-skill problem weighs
+    // mass (blobs): one skill fully shown = MASS_Q; easy reps (diff < EASY_D: quick reps and the Arena's easy-number moves) fill a skill only
+    // up to EASY_CAP of them, the rest follows the full-strength evidence. Arena Superlative: a right answer on a k-skill problem weighs
     // SUP_W(k) = min(SUP_MAX, 1 + SUP_STEP·(k − 1)); a miss is spread (SUP_MISS / √k) because it does not say which skill failed.
     MASS_Q: 10, MASS_W0: 3, EASY_D: 1, EASY_CAP: 4, EASY_W0: 5, SUP_STEP: 0.25, SUP_MAX: 1.75, SUP_MISS: 0.8,
     // memory
@@ -255665,7 +255669,7 @@ var LMS = (function () {
           level: a.ref && a.ref.type === 'level' ? lvKey(a.ref.ch, a.ref.key) : null, hyp: a.hypId || null, w: 1 });
       });
     });
-    // --- the Dojo (hub.dojo.sessions): Blob Roll moves and Quest steps are easy-number reps (diff < EASY_D unless the move says otherwise);
+    // --- the Arena (hub.dojo.sessions): Blob Roll moves and Quest steps are easy-number reps (diff < EASY_D unless the move says otherwise);
     // Superlative problems are bank entries at their own tier with the challenge weight.
     var ds = dojoSessions(getItem, hub);
     ds.forEach(function (s) {
@@ -255739,7 +255743,7 @@ var LMS = (function () {
     var we = Ae + Be, easy = K.EASY_CAP * Ae / (we + K.EASY_W0);
     return Math.min(all, full + (1 - full / K.MASS_Q) * easy);
   }
-  // The Dojo's sessions. It is the high-volume part of the record (hundreds of quick answers a day), so it is not kept inside the
+  // The Arena's sessions. It is the high-volume part of the record (hundreds of quick answers a day), so it is not kept inside the
   // hub object, which is parsed and written whole: each day has its own key, 'mm7-dojo-<YYYY-MM-DD>' = { v, sessions:[…] }, and the
   // hub only lists the days (hub.dojo.days). Sessions written inline (hub.dojo.sessions) are read too.
   var DOJO_PREFIX = 'mm7-dojo-';
@@ -255883,7 +255887,7 @@ var LMS = (function () {
   }
   function statusOf(m, v) {
     if (!m || !m.n) return 'Not started';
-    // Secure needs full-strength answers too: easy-number reps alone (quick reps, the Dojo's Blob Roll) leave a skill at Building
+    // Secure needs full-strength answers too: easy-number reps alone (quick reps, the Arena's Blob Roll) leave a skill at Building
     if (v.E >= K.SEC_E && v.W >= K.SEC_W && v.Rnow >= K.DUE_R) return (m.A + m.B) - ((m.Ae || 0) + (m.Be || 0)) >= K.SEC_WF ? 'Secure' : 'Building';
     if (v.E >= K.FADE_E && m.nOK > 0 && m.S !== null && v.Rnow < K.DUE_R) return 'Fading';
     if (v.E < K.BUILD_E && v.W >= K.NEED_W) return 'Needs support';
@@ -258459,7 +258463,7 @@ var HHI = (function () {
   'use strict';
   var HX = null, DAY = 86400000, cache = null, cacheSig = '';
   var ui = { tab: 'problems', q: '', src: 'all', ch: 'all', res: 'all', when: 'all', by: 'day', shown: 60, periods: 10 };
-  var SRC = [['all', 'Everywhere'], ['path', 'Chapter Paths'], ['review', 'Reviews'], ['exam', 'Exams'], ['onramp', 'Onramp'], ['practice', 'Practice sets'], ['dojo', 'Dojo']];
+  var SRC = [['all', 'Everywhere'], ['path', 'Chapter Paths'], ['review', 'Reviews'], ['exam', 'Exams'], ['onramp', 'Onramp'], ['practice', 'Practice sets'], ['dojo', 'Arena']];
   var SECN = { warm: 'Warm-up', set: 'Transfer set', transfer: 'Transfer', chal: 'Challenge', station: 'Station', trial: 'Timed round', models: 'Model', preview: 'Preview' };
   function esc(s) { return HX.esc(s); }
   function el(t, c, h) { return HX.el(t, c, h); }
@@ -258508,13 +258512,13 @@ var HHI = (function () {
         });
       });
     });
-    // the Dojo (Blob Roll, Quest, Superlative, warm-ups and drills)
+    // the Arena (Blob Roll, Quest, Superlative, warm-ups and drills)
     var DMODE = { roll: 'Blob Roll', quest: 'Quest', sup: 'Superlative', warm: 'Warm-up', drill: 'Drill' };
     LMS.dojoSessions(HX.getItem, HX.M().hub || {}).forEach(function (s) {
       (s.answers || []).forEach(function (a, i) {
         var mv = a.move && typeof DJG !== 'undefined' ? (DJG.byId[a.move] || (DJG.questById && DJG.questById[String(a.move).replace(/^quest\./, '')])) : null, en = a.entry ? CAT.entries[a.entry] : null, lv = a.level ? CAT.levels[a.level] : null;
         var what = mv ? (mv.name || mv.title) : en ? en.name : lv ? 'Chapter ' + lv.ch + ' · ' + (lv.unit || '') : '';
-        out.push({ id: 'd:' + s.id + ':' + i, t: a.t, src: 'dojo', section: 'Dojo · ' + (DMODE[s.mode] || s.mode), where: what + (a.step ? ' · ' + a.step : '') + (a.kata ? ' · kata' : ''), ch: (HX.CAT.skills[(a.skills || [])[0]] || {}).ch, skills: a.skills || [], ok: !!a.ok, credit: a.credit === undefined ? (a.ok ? 1 : 0) : a.credit, ms: a.ms || 0, help: !!a.help, tag: a.tag || null, tier: a.diff,
+        out.push({ id: 'd:' + s.id + ':' + i, t: a.t, src: 'dojo', section: 'Arena · ' + (DMODE[s.mode] || s.mode), where: what + (a.step ? ' · ' + a.step : '') + (a.kata ? ' · kata' : ''), ch: (HX.CAT.skills[(a.skills || [])[0]] || {}).ch, skills: a.skills || [], ok: !!a.ok, credit: a.credit === undefined ? (a.ok ? 1 : 0) : a.credit, ms: a.ms || 0, help: !!a.help, tag: a.tag || null, tier: a.diff,
           q: a.q || '', qh: '', entry: a.given || '', show: a.show || '', why: '' });
       });
     });
@@ -258669,7 +258673,7 @@ var HHI = (function () {
 
 /* ===== HTC (Skills & Tactics screens: the chapter sheet, the level cards, the translation decoder, the a = b · c triangle) START =====
    Needs TAC (hub/tactics_core.js + tactics_ch*.js). The hub hands over its helpers in HTC.init(HX).
-   Route: #ch/<n>/tactics[/<unit-level>]. Also used by the level drawer and the Dojo warm-up (HTC.levelCard). */
+   Route: #ch/<n>/tactics[/<unit-level>]. Also used by the level drawer and the Arena warm-up (HTC.levelCard). */
 var HTC = (function () {
   'use strict';
   var HX = null, esc, el, CAT, LVN = ['Foundation', 'Fluency', 'Transfer'];
@@ -258688,12 +258692,12 @@ var HTC = (function () {
       (c.spot ? '<div class="tv-sec spot"><span class="k">Spot it</span>' + TVZ.draw(c.spot) + '</div>' : '') +
       '<div class="tv-sec do"><span class="k">Do it</span>' + c.doit.map(TVZ.draw).join('') + '</div>' +
       (c.trap ? '<div class="tv-sec tr"><span class="k">Trap</span>' + TVZ.draw(['trap', c.trap[0], c.trap[1]]) + '</div>' : '') + '<p class="tv-sr">' + esc(c.alt) + '</p>' + fromChip(c, (key.match(/^ch(\d+):/) || [])[1]) + toolBtns(tools, opt) +
-      (opt.links ? '<footer class="tc-links"><a href="#ch/' + L.ch + '/path/' + esc(k) + '">Open this level</a>' + (typeof HDJ !== 'undefined' ? '<a href="#dojo/warm/' + esc(key) + '">Warm up in the Dojo</a>' : '') + '</footer>' : '') + '</article>';
+      (opt.links ? '<footer class="tc-links"><a href="#ch/' + L.ch + '/path/' + esc(k) + '">Open this level</a>' + (typeof HDJ !== 'undefined' ? '<a href="#dojo/warm/' + esc(key) + '">Warm up in the Arena</a>' : '') + '</footer>' : '') + '</article>';
     return '<article class="tc-card lv' + (L.level || 1) + '" id="tc-' + esc(key.replace(':', '-')) + '" data-level="' + esc(key) + '"><header><span class="tc-lv">' + esc(L.name || LVN[(L.level || 1) - 1]) + '</span>' + (opt.unit ? '<span class="tc-un">' + esc(L.unit || '') + '</span>' : '') + '</header>' +
       '<h4>' + c.t + '</h4><ol class="tc-moves">' + c.m.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ol>' +
       '<div class="tc-ex"><span class="k">Like this</span><span class="x">' + c.ex + '</span></div>' + (c.w ? '<div class="tc-watch"><span class="k">Watch out</span><span class="x">' + c.w + '</span></div>' : '') +
       (tools.length && !opt.bare ? '<div class="tc-tools">' + tools.map(function (t) { return '<button type="button" class="tc-toolbtn" data-tool="' + esc(t) + '">' + (t === 'trans' ? 'Words → symbols decoder' : 'The ' + esc(TAC.TRI[t.slice(4)].say) + ' triangle') + '</button>'; }).join('') + '</div>' : '') +
-      (opt.links ? '<footer class="tc-links"><a href="#ch/' + L.ch + '/path/' + esc(k) + '">Open this level</a>' + (typeof HDJ !== 'undefined' ? '<a href="#dojo/warm/' + esc(key) + '">Warm up in the Dojo</a>' : '') + '</footer>' : '') + '</article>';
+      (opt.links ? '<footer class="tc-links"><a href="#ch/' + L.ch + '/path/' + esc(k) + '">Open this level</a>' + (typeof HDJ !== 'undefined' ? '<a href="#dojo/warm/' + esc(key) + '">Warm up in the Arena</a>' : '') + '</footer>' : '') + '</article>';
   }
   // ---------------------------------------------------------------- the translation decoder
   function transHTML() {
@@ -258772,7 +258776,7 @@ var HTC = (function () {
     return '<div class="tv-ft g-' + e.grp + '" data-f="' + esc(e.id) + '"><div class="hd">' + TVZ.icon(e.ic) + '<span class="nm">' + (e.grp === 'u' ? TVZ.fmt(e.ask) : esc(e.name)) + '</span></div><div class="fx' + wd(e.f) + '">' + TVZ.fmt(e.f) + '</div>' +
       (kids.length ? '<div class="alt">' + kids.map(function (k) { return '<span class="' + wd(k.f).trim() + '" title="' + esc(k.name) + '">' + TVZ.fmt(k.f) + '</span>'; }).join('') + '</div>' : '') +
       (e.leg && e.leg.length ? '<div class="lg">' + e.leg.map(function (l) { return '<span><b>' + esc(l[0]) + '</b>' + esc(l[1]) + '</span>'; }).join('') + '</div>' : '') +
-      (dj ? '<a class="dr" href="#dojo/move/' + esc(e.move) + '" aria-label="Drill ' + esc(e.name) + ' in the Dojo">Drill</a>' : '') + '</div>';
+      (dj ? '<a class="dr" href="#dojo/move/' + esc(e.move) + '" aria-label="Drill ' + esc(e.name) + ' in the Arena">Drill</a>' : '') + '</div>';
   }
   function bankHTML(n) {
     tile.ch = n;
@@ -258784,7 +258788,7 @@ var HTC = (function () {
   function flashHTML(n) {
     var ns = [].concat(n), hasU = ns.some(function (c) { return FML.list(c, 'u').length > 0; }), dj = typeof DJG !== 'undefined' && ns.length === 1 && DJG.byId['form.r' + n];
     return '<section class="tc-flash" id="tc-flash" data-ch="' + ns.join(',') + '"><div class="tc-fhead"><h3>Flash cards</h3><div class="tc-seg sm" role="group" aria-label="Which cards"><button type="button" data-deck="all" aria-pressed="true">All</button><button type="button" data-deck="f" aria-pressed="false">Formulas</button>' + (hasU ? '<button type="button" data-deck="u" aria-pressed="false">Undo rules</button>' : '') + '</div>' +
-      (dj ? '<a class="btn ghost sm" href="#dojo/move/form.r' + n + '">Drill in the Dojo</a>' : '') + '</div><div class="tc-fbody"></div></section>';
+      (dj ? '<a class="btn ghost sm" href="#dojo/move/form.r' + n + '">Drill in the Arena</a>' : '') + '</div><div class="tc-fbody"></div></section>';
   }
   function flashWire(sec) {
     var ns = String(sec.dataset.ch).split(',').map(Number), body = sec.querySelector('.tc-fbody'), St = null;
@@ -258853,10 +258857,10 @@ var HTC = (function () {
       '<section class="tc-integ" id="tc-integ"><h2>Two chapters, one problem</h2><p class="sub">Read the problem, try it, then step through one move at a time.</p>' +
       G.integ.map(function (p, i) { return '<article class="tc-iq" data-iq="' + i + '" data-shown="0"><div class="tc-iqhd"><h3>' + esc(p.h) + '</h3><span>' + p.terrs.map(function (t) { return '<span class="tc-terr">' + esc(terrLab(t)) + '</span>'; }).join('') + '</span></div><p class="tc-iqprob">' + TVZ.fmt(p.prob) + '</p><ol class="tc-iqsteps">' +
         p.steps.map(function (st, j) { return '<li class="tv" data-step="' + j + '" hidden><span class="k">Step ' + (j + 1) + '</span><b>' + esc(st.say) + '</b>' + TVZ.draw(st.vis) + '</li>'; }).join('') + '</ol><div class="tc-iqbtns"><button type="button" class="btn primary sm" data-iqnext="1">Show step 1</button><button type="button" class="btn ghost sm" data-iqall="1">Show all</button></div><div class="tc-refs">' + p.refs.map(refLink).join('') + '</div></article>'; }).join('') + '</section>' +
-      '<section class="tc-traps" id="tc-traps"><h2>Trap gallery</h2><p class="sub">The slips the Review and the Exam of ' + esc(G.name) + ' see most, each beside the right way.' + (typeof DJG !== 'undefined' && DJG.TRAPS ? ' <a href="#dojo/focus/trap">Drill the traps in the Dojo</a>' : '') + '</p><div class="tc-trapgrid">' +
+      '<section class="tc-traps" id="tc-traps"><h2>Trap gallery</h2><p class="sub">The slips the Review and the Exam of ' + esc(G.name) + ' see most, each beside the right way.' + (typeof DJG !== 'undefined' && DJG.TRAPS ? ' <a href="#dojo/focus/trap">Drill the traps in the Arena</a>' : '') + '</p><div class="tc-trapgrid">' +
       G.traps.map(function (t) { return '<article class="tc-trapc tv"><div class="tc-cuehd"><span class="tc-terr">' + esc(terrLab(t.terr)) + '</span><span class="tc-tag">' + esc((tg[t.tag] && tg[t.tag].label) || t.tag) + '</span></div>' + TVZ.draw(['trap', t.trap[0], t.trap[1]]) + '<p class="tc-sr">' + esc(t.alt) + '</p></article>'; }).join('') + '</div></section>' +
       '<section class="tc-grpfl"><h2>Formulas</h2><p class="sub">The formula flash cards of Chapter' + (G.chs.length > 1 ? 's ' : ' ') + G.chs.join(' and ') + ' in one deck.</p>' + flashHTML(G.chs) + '</section>' +
-      '<section class="tc-grpdojo"><h2>Drill it in the Dojo</h2><div class="tc-dojolinks">' + G.dojo.map(function (d) { return '<a class="btn ghost" href="#dojo/focus/' + esc(d[0]) + '">' + esc(d[1]) + '</a>'; }).join('') + '</div></section>';
+      '<section class="tc-grpdojo"><h2>Drill it in the Arena</h2><div class="tc-dojolinks">' + G.dojo.map(function (d) { return '<a class="btn ghost" href="#dojo/focus/' + esc(d[0]) + '">' + esc(d[1]) + '</a>'; }).join('') + '</div></section>';
     wrap.innerHTML = h; wire(wrap); flashWire(wrap.querySelector('.tc-flash'));
     wrap.addEventListener('click', function (e) {
       var j = e.target.closest('[data-jump]'); if (j) { e.preventDefault(); var t = document.getElementById(j.dataset.jump); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
@@ -258875,14 +258879,14 @@ var HTC = (function () {
     wrap.innerHTML = '<div class="hb-chhead"><a class="back" href="#reviews">←<span>Reviews &amp; Exams</span></a><h1><small>The whole course</small>The Course Sheet</h1></div><p class="sub tc-grplede">' + esc(C.lede) + '</p>' +
       C.patterns.map(function (p, i) { var T0 = TAC.THREADS[p.th]; return '<section class="tc-pat"><div class="tc-pathd"><span class="tc-patn">' + (i + 1) + '</span><div><h2>' + esc(p.h) + '</h2><p>' + esc(p.line) + '</p></div>' + (T0 ? '<span class="tc-th">' + TVZ.icon(T0.ic) + esc(T0.name) + '</span>' : '') + '</div>' +
         '<div class="tc-patbody"><div class="tc-patbig tv">' + TVZ.draw(p.big) + '</div><div class="tc-patviews"><span class="k">You have met this as</span><div class="tc-cviews">' + p.views.map(view).join('') + '</div></div></div>' +
-          '<div class="tc-patdojo"><a class="btn ghost sm" href="#dojo/idea/' + esc(p.th) + '">Practise this idea across the course in the Dojo</a><span>Blob Roll, Quest and Superlative, drawn from every chapter that uses it</span></div></section>'; }).join('');
+          '<div class="tc-patdojo"><a class="btn ghost sm" href="#dojo/idea/' + esc(p.th) + '">Practise this idea across the course in the Arena</a><span>Blob Roll, Quest and Superlative, drawn from every chapter that uses it</span></div></section>'; }).join('');
     wire(wrap);
   }
   return { courseView: courseView, groupView: groupView, init: function (hx) { HX = hx; esc = hx.esc; el = hx.el; CAT = hx.CAT; }, view: view, levelCard: cardHTML, has: function (key) { return !!TAC.level(key); }, wire: wire, openTool: openTool, transHTML: transHTML, triHTML: triHTML, bankHTML: bankHTML, flashWire: flashWire };
 })();
 /* ===== HTC END ===== */
 
-/* ===== HDJ (the Dojo screens: home, Blob Roll, Quest, Superlative, warm-ups and skill drills, the cockpit) START =====
+/* ===== HDJ (the Arena screens: home, Blob Roll, Quest, Superlative, warm-ups and skill drills, the cockpit) START =====
    Needs DJ (hub/dojo_core.js), DJG (moves and quests), SP.judge (xr/sprint.js), X.mountProblem (xr/common.js), LMS, MMS.
    The hub hands over its helpers in HDJ.init(HX) (hub/hub_ui.js, HXO). Routes: #dojo, #dojo/roll, #dojo/quest, #dojo/sup,
    #dojo/warm/<levelKey>, #dojo/skill/<skillId>, #dojo/move/<moveId>. Design and rules: hub/DOJO.md. */
@@ -258900,14 +258904,14 @@ var HDJ = (function () {
   function loadUi() { var h = hubSettings(), d = h.settings.dojo; if (d) { ui.focus = d.focus || null; ui.lv = d.lv || ui.lv; } }
   function saveUi() { var h = hubSettings(); h.settings.dojo = { focus: ui.focus, lv: ui.lv }; HX.saveHub(h); }
   function model() { return HX.M().m; }
-  // every Dojo session, from the day keys (hub/lms_model.js, dojoSessions); read on the home page and when a session starts, never per answer
+  // every Arena session, from the day keys (hub/lms_model.js, dojoSessions); read on the home page and when a session starts, never per answer
   function allSessions() { return LMS.dojoSessions(HX.getItem, HX.loadHub()).slice().sort(function (a, b) { return (a.start || 0) - (b.start || 0); }); }
   // the ideas of the Course Sheet (Stage 10): an idea focus practises one idea across every chapter, through the Path levels whose cards wear it
   function ideas() { return typeof TAC !== 'undefined' && TAC.course && TAC.course() ? TAC.course().patterns : []; }
   function ideaOf(th) { return ideas().filter(function (p) { return p.th === th; })[0] || null; }
   function ideaLevels(th) { return Object.keys(TAC.LV).filter(function (k) { return CAT.levels[k] && (TAC.LV[k].th || []).indexOf(th) >= 0; }); }
   function realFocus(f) { return f && f.idea ? (ideaOf(f.idea) ? { idea: f.idea, levels: ideaLevels(f.idea) } : null) : f; }
-  function focusName(f) { return f && f.tools ? 'Measure and draw' : f && f.style ? styleName(f.style) : f && f.idea && ideaOf(f.idea) ? ideaOf(f.idea).h : 'Sensei’s mix'; }
+  function focusName(f) { return f && f.tools ? 'Measure and draw' : f && f.style ? styleName(f.style) : f && f.idea && ideaOf(f.idea) ? ideaOf(f.idea).h : 'Mixed'; }
   function styleName(id) { var s = DJG.STYLES.filter(function (z) { return z.id === id; })[0]; return s ? s.name : id; }
   function lvOf(mode, belts) { var v = ui.lv[mode]; return v >= 1 && v <= 3 ? v : (belts ? belts[mode].lv : 1); }
 
@@ -259032,14 +259036,14 @@ var HDJ = (function () {
       '<div class="dj-beltbar big"><span class="dj-belt" style="--belt:' + BELT_HEX[after.belt] + '">' + after.belt + ' belt</span><div class="bar"><i style="width:' + (after.frac * 100).toFixed(0) + '%"></i></div><span class="nx">' + (after.next ? after.toNext + ' to ' + after.next : 'top belt') + '</span></div>' + (after.i > before.i ? '<p class="dj-up">New belt: ' + after.belt + '.</p>' : '') +
       (moved.length ? '<h3>Where the blobs moved</h3><div class="dj-moved">' + moved.map(function (x) { return '<button type="button" class="dj-mv" data-skill="' + esc(x.id) + '"><span class="d ' + (x.d < 0 ? 'dn' : 'up') + '">' + sgn(x.d, 2) + '</span><span>' + esc(HX.skillShort(x.id)) + '</span></button>'; }).join('') + '</div>' : '') +
       '<p class="hb-muted dj-fine">Easy-number reps refresh memory in full and fill a skill up to ' + LMS.K.EASY_CAP + ' of its ' + LMS.K.MASS_Q + ' blobs. The rest comes from full-strength problems: Paths, Reviews, Exams, Superlative.</p>' +
-      '<div class="hb-row"><a class="btn primary" href="#' + esc(o.again) + '" data-again="1">Go again</a><a class="btn ghost" href="#dojo">Dojo</a><a class="hb-link" href="#dashboard">Dashboard</a>' + (o.next ? '<a class="btn ghost" href="#' + esc(o.next.href) + '">' + esc(o.next.label) + '</a>' : '') + '</div></section>';
+      '<div class="hb-row"><a class="btn primary" href="#' + esc(o.again) + '" data-again="1">Go again</a><a class="btn ghost" href="#dojo">Arena</a><a class="hb-link" href="#dashboard">Dashboard</a>' + (o.next ? '<a class="btn ghost" href="#' + esc(o.next.href) + '">' + esc(o.next.label) + '</a>' : '') + '</div></section>';
     wrap.innerHTML = h;
     wrap.onclick = function (e) { var b = e.target.closest('[data-skill]'); if (b) HX.openSkill(b.dataset.skill); var ag = e.target.closest('[data-again]'); if (ag) { e.preventDefault(); S = null; if (location.hash === ag.getAttribute('href')) HX.reroute(); else location.hash = ag.getAttribute('href'); } };
     window.scrollTo(0, 0);
   }
   function shell(main, title, sub) {
     var wrap = el('div', 'hb-wrap dj-wrap novar'); main.appendChild(wrap);
-    wrap.innerHTML = '<div class="hb-crumb"><a href="#dojo">‹ Dojo</a></div><div class="dj-stage"><div class="dj-play"><div class="dj-top"><div><div class="eyebrow">' + esc(sub || '') + '</div><h1 class="dj-h">' + esc(title) + '</h1></div><div class="dj-topr"></div></div><div class="dj-body"></div></div><aside class="dj-side"></aside></div>';
+    wrap.innerHTML = '<div class="hb-crumb"><a href="#dojo">‹ Arena</a></div><div class="dj-stage"><div class="dj-play"><div class="dj-top"><div><div class="eyebrow">' + esc(sub || '') + '</div><h1 class="dj-h">' + esc(title) + '</h1></div><div class="dj-topr"></div></div><div class="dj-body"></div></div><aside class="dj-side"></aside></div>';
     return { wrap: wrap, body: wrap.querySelector('.dj-body'), side: wrap.querySelector('.dj-side'), topr: wrap.querySelector('.dj-topr'), stage: wrap.querySelector('.dj-stage') };
   }
   function startCard(body, o, go) {
@@ -259059,7 +259063,7 @@ var HDJ = (function () {
     var L0 = kind === 'warm' ? CAT.levels[arg] : null, title = timed ? 'Blob Roll' : kind === 'warm' ? 'Warm-up' : kind === 'skill' ? 'Skill drill' : kind === 'tools' ? 'Measure and draw' : 'Move drill';
     var sub = timed ? DJ.LEVELS.roll[lv - 1] + ' · ' + focusName(focus) : kind === 'warm' && L0 ? 'Chapter ' + L0.ch + ' · ' + (L0.unit || '') + ' · Level ' + L0.level : kind === 'skill' && CAT.skills[arg] ? HX.skillShort(arg) : kind === 'move' && DJG.byId[arg] ? DJG.byId[arg].name : '';
     var sh = shell(main, title, sub);
-    if (!queue.length) { sh.body.innerHTML = '<div class="hb-card">Nothing to practise here yet. <a href="#dojo">Back to the Dojo</a></div>'; return; }
+    if (!queue.length) { sh.body.innerHTML = '<div class="hb-card">Nothing to practise here yet. <a href="#dojo">Back to the Arena</a></div>'; return; }
     begin(timed ? 'roll' : kind === 'warm' ? 'warm' : 'drill', lv, focus, { queue: queue, qi: 0, run: null, ri: 0, seenCard: {}, probed: {}, timed: timed, left: DJ.K.CLOCK[lv] * 1000, max: DJ.K.CLOCK_MAX * 1000, paused: true, kind: kind, arg: arg });
     S.pit = cockpit(sh.side, { belt: belts.roll }); pit();
     if (timed) sh.topr.innerHTML = '<div class="dj-clock" role="timer" aria-label="Time left"><div class="dj-fuse"><i></i><span class="spark"></span></div><div class="dj-secs"><b>' + DJ.K.CLOCK[lv] + '</b><span>s</span></div><div class="dj-bump" aria-hidden="true"></div></div>';
@@ -259171,7 +259175,7 @@ var HDJ = (function () {
     var all0 = allSessions(), belts = DJ.belts(all0), lv = lvOf('quest', belts), m = model(), last = all0.filter(function (s) { return s.mode === 'quest' && s.quest; }).slice(-4).map(function (s) { return s.quest; });
     var F = realFocus(ui.focus), order = DJ.questOrder(m, CAT, { focus: F, last: last }), qid = forced && DJG.questById[forced] ? forced : (order[0] || { id: DJG.QUESTS[0].id }).id, Q0;
     try { Q0 = DJG.quest(qid, lv); } catch (e) { main.appendChild(el('div', 'hb-wrap', '<div class="hb-card">This quest could not be made. <a href="#dojo">Back</a></div>')); setTimeout(function () { throw e; }, 0); return; }
-    var sh = shell(main, Q0.title, 'Quest · ' + DJ.LEVELS.quest[lv - 1] + (F && !order.length && !forced ? ' · no quest for ' + focusName(F) + ' yet: the Sensei’s pick' : F ? ' · ' + focusName(F) : ''));
+    var sh = shell(main, Q0.title, 'Quest · ' + DJ.LEVELS.quest[lv - 1] + (F && !order.length && !forced ? ' · no quest for ' + focusName(F) + ' yet: a mixed pick' : F ? ' · ' + focusName(F) : ''));
     begin('quest', lv, F, { Q: Q0, i: 0, tries: 0 }); S.sess.quest = qid;
     S.pit = cockpit(sh.side, { belt: belts.quest }); pit();
     sh.topr.innerHTML = '<div class="dj-count"><b>0</b> of ' + Q0.nodes.length + ' stops</div>';
@@ -259236,7 +259240,7 @@ var HDJ = (function () {
     mark();
   }
 
-  // Chapters 1–2 keep their own wording everywhere else (owner rule). In the Dojo their word problems borrow the cast: a first name
+  // Chapters 1–2 keep their own wording everywhere else (owner rule). In the Arena their word problems borrow the cast: a first name
   // is swapped for a cast member of the same pronoun, consistently inside one problem. Numbers, answers and grading are untouched.
   var SHE = ['Maya', 'Priya', 'Ana', 'Keiko', 'Tess', 'Hana', 'Ruth', 'Ava', 'Hannah', 'Ivy', 'Ella', 'Rita', 'Amy', 'Rosa', 'Bea'], HE = ['Leo', 'Marcus', 'Jonah', 'Omar', 'Dev', 'Diego', 'Kenji', 'Sami', 'Daniel', 'Sam', 'Noah', 'James', 'Jon', 'Alex', 'Carl'];
   var CSHE = ['Grandma Thunder', 'Duchess Banana', 'Madame Kazoo', 'Queen Beeswax', 'Princess Gravel'], CHE = ['Captain Pickle', 'Sir Fluffington', 'Professor Wobble', 'Chef Kaboom', 'Mayor Turnip', 'Lord Crumpet', 'Uncle Lasagna', 'Count Snorebert', 'Baron von Noodle', 'Doctor Spatula', 'Sheriff Marmalade', 'Admiral Ant'];
@@ -259254,7 +259258,7 @@ var HDJ = (function () {
   function viewSup(main) {
     var belts = DJ.belts(allSessions()), lv = lvOf('sup', belts), m = model(), F = realFocus(ui.focus), pool = DJ.supPool(m, CAT, { lv: lv, focus: F, cur: m.curCh }), ROUNDS = 3;
     var sh = shell(main, 'Superlative', DJ.LEVELS.sup[lv - 1] + ' · ' + focusName(F));
-    if (!pool.length) { sh.body.innerHTML = '<div class="hb-card">No multi-skill problems for this focus. <a href="#dojo">Back to the Dojo</a></div>'; return; }
+    if (!pool.length) { sh.body.innerHTML = '<div class="hb-card">No multi-skill problems for this focus. <a href="#dojo">Back to the Arena</a></div>'; return; }
     begin('sup', lv, F, { pool: pool, pi: 0, k: 0, used: {} });
     S.pit = cockpit(sh.side, { belt: belts.sup }); pit();
     sh.topr.innerHTML = '<div class="dj-count"><b>0</b> of ' + ROUNDS + '</div>';
@@ -259421,10 +259425,10 @@ var HDJ = (function () {
     function lvPick(mode) { var cur = lvOf(mode, belts); return '<div class="dj-lv" role="group" aria-label="Challenge level">' + DJ.LEVELS[mode].map(function (n, i) { return '<button type="button" data-lv="' + mode + ':' + (i + 1) + '" aria-pressed="' + (cur === i + 1) + '">' + esc(n) + '</button>'; }).join('') + '</div>'; }
     function modeCard(mode, href, art) { var b = belts[mode]; return '<section class="hb-card dj-mode m-' + mode + '"><div class="dj-mode-h"><h2>' + DJ.MODES[mode].name + '</h2><span class="dj-belt" style="--belt:' + BELT_HEX[b.belt] + '">' + b.belt + '</span></div><p class="sub">' + esc(DJ.MODES[mode].blurb) + '</p>' + art + lvPick(mode) + '<div class="dj-beltbar"><div class="bar"><i style="width:' + (b.frac * 100).toFixed(0) + '%"></i></div><span class="nx">' + (b.next ? b.toNext + ' to ' + b.next : 'top belt') + '</span></div><a class="btn primary" href="#' + href + '">Enter</a></section>'; }
     var fo = ui.focus && ui.focus.style ? ui.focus.style : null, fi = ui.focus && ui.focus.idea && ideaOf(ui.focus.idea) ? ui.focus.idea : null;
-    wrap.innerHTML = '<section class="dj-hero"><div><div class="eyebrow">Mathjitsu</div><h1>The Dojo</h1><p>Roll, quest and spar to keep every skill alive. Nothing here is locked: what is due comes first, and new ground is always mixed in.</p></div>' +
+    wrap.innerHTML = '<section class="dj-hero"><div><div class="eyebrow">Practice</div><h1>The Arena</h1><p>Roll, quest and spar to keep every skill alive. Nothing here is locked: what is due comes first, and new ground is always mixed in.</p></div>' +
       '<div class="dj-herostats"><div><b>' + ov.due + '</b><span>due now</span></div><div><b>' + ov.fading + '</b><span>fading</span></div><div><b>' + ov.weak + '</b><span>to strengthen</span></div><div><b>' + ov.scout + '</b><span>new ground</span></div><div class="g"><b>' + sgn(tGain, 2) + '</b><span>blobs here today · ' + tN + ' answers</span></div></div></section>' +
       '<div class="dj-modes">' + modeCard('roll', 'dojo/roll', '<div class="dj-art a-roll" aria-hidden="true"><i></i><i></i><i></i></div>') + modeCard('quest', 'dojo/quest', '<div class="dj-art a-quest" aria-hidden="true"><svg viewBox="0 0 260 60" preserveAspectRatio="xMidYMid meet"><defs><linearGradient id="djm-rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--dj-well-lo)"/><stop offset="1" style="stop-color:var(--dj-well-hi)"/></linearGradient><radialGradient id="djm-floor" cx="66%" cy="68%" r="75%"><stop offset="0" style="stop-color:var(--dj-well-f2)"/><stop offset="1" style="stop-color:var(--dj-well-f1)"/></radialGradient><radialGradient id="djm-dome" cx="34%" cy="28%" r="78%"><stop offset="0" stop-color="#d9fff2"/><stop offset=".5" stop-color="#3fd6a6"/><stop offset="1" stop-color="#127a5f"/></radialGradient></defs><path class="rt" d="M34 40C70 4 96 58 130 26S196 8 226 34"/><path class="tr" d="M34 40C70 4 96 58 130 26"/><circle cx="34" cy="40" r="11" fill="url(#djm-dome)"/><ellipse cx="30.5" cy="35.5" rx="3.4" ry="1.9" fill="#fff" opacity=".7" transform="rotate(-28 30.5 35.5)"/><circle class="rg" cx="130" cy="26" r="16"/><circle cx="130" cy="26" r="12" fill="url(#djm-rim)"/><circle cx="130" cy="26" r="9.5" fill="url(#djm-floor)"/><g class="mb"><ellipse cx="130" cy="26.5" rx="7" ry="6.3" fill="url(#djm-dome)"/><circle cx="127.8" cy="26" r="1.1" fill="#0c2a24"/><circle cx="132.2" cy="26" r="1.1" fill="#0c2a24"/></g><circle cx="226" cy="34" r="13" fill="url(#djm-rim)"/><circle cx="226" cy="34" r="10.3" fill="url(#djm-floor)"/></svg></div>') + modeCard('sup', 'dojo/sup', '<div class="dj-art a-sup" aria-hidden="true"><b>×1.5</b></div>') + '</div>' +
-      '<section class="hb-card dj-focus"><div class="dj-focus-h"><div><h2>Focus</h2><p class="sub">Pick an area to train, or leave it to the Sensei’s mix. The focus applies to all three modes.</p></div><button type="button" class="btn ' + (fo || fi ? 'ghost' : 'primary') + ' sm" data-style="">Sensei’s mix</button></div>' +
+      '<section class="hb-card dj-focus"><div class="dj-focus-h"><div><h2>Focus</h2><p class="sub">Pick an area to train, or leave it mixed. The focus applies to all three modes.</p></div><button type="button" class="btn ' + (fo || fi ? 'ghost' : 'primary') + ' sm" data-style="">Mixed</button></div>' +
       '<div class="dj-styles">' + DJG.STYLES.map(function (st) { var o = ov.styles[st.id] || {}, held = o.max ? o.mq / o.max : 0; return '<button type="button" class="dj-style' + (fo === st.id ? ' on' : '') + '" data-style="' + st.id + '" aria-pressed="' + (fo === st.id) + '"><span class="n">' + esc(st.name) + '</span><span class="b">' + esc(st.blurb) + '</span><span class="m"><i style="width:' + (held * 100).toFixed(0) + '%"></i></span><span class="c">' + (o.due ? '<em class="due">' + o.due + ' due</em>' : '') + (o.weak ? '<em class="weak">' + o.weak + ' weak</em>' : '') + '<em>' + o.started + ' of ' + o.n + ' skills met</em><em>Ch ' + st.ch.join(', ') + '</em></span></button>'; }).join('') + '</div>' +
       (ideas().length ? '<div class="dj-ideas"><div class="eyebrow">Course Sheet ideas · one idea across every chapter, for the final exam</div><div class="dj-ideagrid">' + ideas().map(function (p, i) { var lv0 = ideaLevels(p.th), chs = {}; lv0.forEach(function (k) { chs[CAT.levels[k].ch] = 1; }); var u = DJ.unitUrgency(m, CAT, DJ.ideaSkills(CAT, { levels: lv0 }), m.curCh);
         return '<button type="button" class="dj-idea' + (fi === p.th ? ' on' : '') + '" data-idea="' + esc(p.th) + '" aria-pressed="' + (fi === p.th) + '"><span class="i">' + (i + 1) + '</span><span class="n">' + esc(p.h) + '</span><span class="c"><em>' + lv0.length + ' Path levels</em><em>Ch ' + Object.keys(chs).sort(function (a, b) { return a - b; }).join(', ') + '</em>' + (u.kind === 'due' || u.kind === 'weak' ? '<em class="' + u.kind + '">' + esc(DJ.WHY[u.raw || u.kind]) + '</em>' : '') + '</span></button>'; }).join('') + '</div></div>' : '') +
@@ -259434,7 +259438,7 @@ var HDJ = (function () {
       (DJG.TRAPS ? '<section class="hb-card dj-traps" id="dj-traps"><div class="dj-focus-h"><div><h2>Traps</h2><p class="sub">The slips the course sees most, one at a time with fresh numbers: spot the slip, pick the right way, or fix it. Train them all as a Blob Roll, or drill one trap alone.</p></div><button type="button" class="btn ' + (fo === 'trap' ? 'primary' : 'ghost') + ' sm" data-style="trap" aria-pressed="' + (fo === 'trap') + '">Train all traps</button></div>' +
         '<div class="dj-traplist">' + [1, 2, 3, 4, 5, 6, 7, 8].map(function (c) { var mv0 = DJG.MOVES.filter(function (mv) { return mv.style === 'trap' && DJG.TRAPS.some(function (t) { return 'trap.' + t.id === mv.id && t.ch === c; }); }); return mv0.length ? '<div class="dj-trapch"><span class="k">Chapter ' + c + '</span><div class="chips">' + mv0.map(function (mv) { var u = DJ.unitUrgency(m, CAT, mv.skills, m.curCh); return '<a class="dj-mvchip k-' + u.kind + '" href="#dojo/move/' + mv.id + '"><b>' + esc(mv.name) + '</b><span>' + esc(mv.card.h) + '</span></a>'; }).join('') + '</div></div>' : ''; }).join('') + '</div></section>' : '') +
       '<section class="hb-card dj-recent"><h2>Recent sessions</h2>' + (sessions.length ? '<div class="dj-rlist">' + sessions.slice(-8).reverse().map(function (s) { var md = s.mode === 'warm' ? 'Warm-up' : s.mode === 'drill' ? 'Drill' : s.mode === 'journey' ? 'Course review' : DJ.MODES[s.mode] ? DJ.MODES[s.mode].name : s.mode, nA = (s.answers || []).length, ok = (s.answers || []).filter(function (a) { return a.ok; }).length; return '<div class="r"><b>' + esc(md) + '</b><span>' + new Date(s.start).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + '</span><span>' + ok + ' of ' + nA + ' right</span><span class="g">' + sgn(s.gain || 0, 2) + ' blobs</span></div>'; }).join('') + '</div><a class="hb-link" href="#history">Every problem is in History</a>' : '<p class="hb-muted">Nothing yet. Pick a mode above.</p>') + '</section>' +
-      '<details class="hb-card hb-how dj-how"><summary>How the Dojo decides, and what counts</summary><div class="body"><p><b>What comes up.</b> Each skill has a memory strength in the learner model. A skill whose recall has dropped below ' + Math.round(LMS.K.DUE_R * 100) + '% is <i>due</i>; between that and ' + Math.round(DJ.K.FADE_HI * 100) + '% it is <i>fading</i>; a started skill with mastery under ' + Math.round(DJ.K.WEAK_E * 100) + '% is <i>to strengthen</i>; a skill never met is <i>new ground</i>. Blob Roll fills its queue in the pattern due, due, strengthen, new, and never repeats a move within ' + DJ.K.GAP + ' turns. ' + ov.dueKata + ' due skills have no quick move, so they come back as a full problem (a kata) with the clock stopped.</p>' +
+      '<details class="hb-card hb-how dj-how"><summary>How the Arena decides, and what counts</summary><div class="body"><p><b>What comes up.</b> Each skill has a memory strength in the learner model. A skill whose recall has dropped below ' + Math.round(LMS.K.DUE_R * 100) + '% is <i>due</i>; between that and ' + Math.round(DJ.K.FADE_HI * 100) + '% it is <i>fading</i>; a started skill with mastery under ' + Math.round(DJ.K.WEAK_E * 100) + '% is <i>to strengthen</i>; a skill never met is <i>new ground</i>. Blob Roll fills its queue in the pattern due, due, strengthen, new, and never repeats a move within ' + DJ.K.GAP + ' turns. ' + ov.dueKata + ' due skills have no quick move, so they come back as a full problem (a kata) with the clock stopped.</p>' +
       '<p><b>What counts.</b> Every answer here goes into the same learner model as the Paths and Reviews. Blob Roll and Quest steps are easy-number reps: they refresh memory in full, and fill a skill up to ' + LMS.K.EASY_CAP + ' of its ' + LMS.K.MASS_Q + ' blobs (they never make a skill Secure alone). Katas and Superlative problems are full-strength evidence. In Superlative a right answer on a problem with k skills counts 1 + ' + LMS.K.SUP_STEP + '(k − 1) times, up to ' + LMS.K.SUP_MAX + ', for each of them; a miss is spread thin because it does not say which skill failed.</p>' +
       '<p><b>The cockpit.</b> Blobs are recomputed after every answer. Velocity is blobs per minute over the last minute, acceleration is the change against the minute before, momentum is course mass × velocity.</p></div></details>';
     wrap.onclick = function (e) {
@@ -259447,10 +259451,10 @@ var HDJ = (function () {
   // =============================================================== small cards for other pages
   function todayCard() {
     var m = model(), ov = DJ.overview(m, CAT, m.curCh), c = el('section', 'hb-card dj-today');
-    c.innerHTML = '<div><div class="eyebrow">The Dojo</div><h2>' + (ov.due + ov.fading ? (ov.due + ov.fading) + ' skills want a refresh' : 'Keep it sharp') + '</h2><p class="sub">Quick reps with friendly numbers, a quest, or a full-strength challenge. ' + (ov.weak ? ov.weak + ' to strengthen. ' : '') + 'New ground is always mixed in.</p></div><a class="btn ghost" href="#dojo">Enter the Dojo</a>';
+    c.innerHTML = '<div><div class="eyebrow">The Arena</div><h2>' + (ov.due + ov.fading ? (ov.due + ov.fading) + ' skills want a refresh' : 'Keep it sharp') + '</h2><p class="sub">Quick reps with friendly numbers, a quest, or a full-strength challenge. ' + (ov.weak ? ov.weak + ' to strengthen. ' : '') + 'New ground is always mixed in.</p></div><a class="btn ghost" href="#dojo">Enter the Arena</a>';
     return c;
   }
-  function warmButton(levelKey, label) { return '<a class="btn ghost sm dj-warmbtn" href="#dojo/warm/' + esc(levelKey) + '">' + esc(label || 'Warm up in the Dojo first') + '</a>'; }
+  function warmButton(levelKey, label) { return '<a class="btn ghost sm dj-warmbtn" href="#dojo/warm/' + esc(levelKey) + '">' + esc(label || 'Warm up in the Arena first') + '</a>'; }
 
   function view(main, p) {
     loadUi(); stop(); S = null;
@@ -259793,7 +259797,7 @@ var HDJ = (function () {
   var cur = { frame: null, player: null, practice: null, last: '' };
   // Chapters 3–5 were one Review and one Exam until November 2026. A bookmark to either opens the Chapters 3–4 one.
   var ROUTE_ALIAS = { 'ch345-review': 'ch34-review', 'ch345-exam': 'ch34-exam' };
-  function parse() { var h = decodeURIComponent(location.hash.replace(/^#/, '')) || 'today', p = h.split('/'); if (p[0] === 'app' && ROUTE_ALIAS[p[1]]) p[1] = ROUTE_ALIAS[p[1]]; return p; }
+  function parse() { var h = decodeURIComponent(location.hash.replace(/^#/, '')) || 'today', p = h.split('/'); if (p[0] === 'app' && ROUTE_ALIAS[p[1]]) p[1] = ROUTE_ALIAS[p[1]]; if (p[0] === 'arena') p[0] = 'dojo'; return p; }   // the Dojo is the Arena (22 Nov 2026); #arena is an alias of #dojo
   function go(h) { if (location.hash === '#' + h) route(); else location.hash = h; }
   function setNav(name) {
     var map = { today: 'today', onramp: 'today', practice: cur.practice && cur.practice.navFrom || 'chapters', chapters: 'chapters', ch: 'chapters', reviews: 'reviews', course: 'reviews', app: 'reviews', progress: 'dashboard', dashboard: 'dashboard', history: 'history', dojo: 'dojo', settings: 'settings' };
@@ -259807,7 +259811,7 @@ var HDJ = (function () {
     if (cur.frame && cur.frame.key === frameKey) { if (p[3]) { cur.frame.pre = p[3]; preselect(); } return; }
     if (cur.frame) closeFrame();
     if (cur.player && name !== 'onramp' && name !== 'practice') leavePlayer();
-    if (typeof HDJ !== 'undefined') HDJ.leave();   // a Dojo session stops its clock when the page changes
+    if (typeof HDJ !== 'undefined') HDJ.leave();   // a Arena session stops its clock when the page changes
     setNav(name);
     document.body.classList.toggle('hb-framed', !!frameKey);
     var main = $('hbMain'); main.innerHTML = '';
@@ -259895,7 +259899,7 @@ var HDJ = (function () {
       if (nw) wk.innerHTML = '<div><div class="eyebrow">Today’s main work</div><h2>Chapter ' + nw.ch + ' · ' + esc(nw.unit || unitName(nw.ch, nw.key)) + '</h2><p class="sub">Level ' + String(nw.key).split('-')[1] + ' · ' + esc(nw.levelName || levelName(nw.key)) + (done ? ' — the onramp is done, so this is a fresh start.' : specs.length ? ' — after the onramp, while focus is fresh.' : '.') + '</p></div><button class="btn ' + (done || !specs.length ? 'primary' : 'ghost') + '" type="button" data-act="work">Start today’s work</button>';
       else wk.innerHTML = '<div><div class="eyebrow">Today’s main work</div><h2>Every built chapter is complete</h2><p class="sub">Keep things fresh with the onramp and the Reviews.</p></div><a class="btn ghost" href="#reviews">Reviews &amp; Exams</a>';
       box.appendChild(wk);
-      if (nw && typeof HDJ !== 'undefined' && CAT.levels['ch' + nw.ch + ':' + nw.key]) { var wu = el('div', 'hb-warm', HDJ.warmButton('ch' + nw.ch + ':' + nw.key, 'Warm up for this level in the Dojo') + '<span class="hb-muted">8 quick reps with easy numbers on what the level uses.</span>'); box.appendChild(wu); }
+      if (nw && typeof HDJ !== 'undefined' && CAT.levels['ch' + nw.ch + ':' + nw.key]) { var wu = el('div', 'hb-warm', HDJ.warmButton('ch' + nw.ch + ':' + nw.key, 'Warm up for this level in the Arena') + '<span class="hb-muted">8 quick reps with easy numbers on what the level uses.</span>'); box.appendChild(wu); }
       if (typeof HDJ !== 'undefined') box.appendChild(HDJ.todayCard());
       var ffc = examFeedCard(); if (ffc) box.appendChild(ffc);
       box.appendChild(activityStrip());
@@ -260476,7 +260480,7 @@ var HDJ = (function () {
         (lv.length ? '<div class="hb-ladh" style="margin:14px 0 6px">Path levels</div><div class="hb-practs">' + lv.map(function (k) { return '<button type="button" class="hb-lvchip" data-openlv="' + s.ch + ':' + esc(k) + '">' + 'Ch ' + s.ch + ' · ' + esc(short(unitName(s.ch, k), 28)) + ' · ' + levelName(k) + '</button>'; }).join('') + '</div>' : '') +
         (ents.length ? '<div class="hb-ladh" style="margin:14px 0 6px">Review and exam items</div><p class="hb-muted" style="font-size:14px">' + ents.slice(0, 8).map(function (e) { return esc(e + ' ' + CAT.entries[e].name); }).join(' · ') + '</p>' : '');
       b.appendChild(pr);
-      if (typeof HDJ !== 'undefined') { var dj = el('div', 'hb-card', '<div class="hb-row"><div style="flex:1;min-width:200px"><b>Train this skill in the Dojo</b><div class="hb-muted" style="font-size:14px">Ten reps on it with no clock: quick moves where it has them, a full problem where it does not.</div></div><button class="btn ghost" type="button" data-dojoskill="' + esc(id) + '">Drill it</button></div>'); b.appendChild(dj); }
+      if (typeof HDJ !== 'undefined') { var dj = el('div', 'hb-card', '<div class="hb-row"><div style="flex:1;min-width:200px"><b>Train this skill in the Arena</b><div class="hb-muted" style="font-size:14px">Ten reps on it with no clock: quick moves where it has them, a full problem where it does not.</div></div><button class="btn ghost" type="button" data-dojoskill="' + esc(id) + '">Drill it</button></div>'); b.appendChild(dj); }
       b.onclick = function (e) {
         var dz = e.target.closest('[data-dojoskill]'); if (dz) { closeDrawer(true); go('dojo/skill/' + dz.dataset.dojoskill); return; }
         var p = e.target.closest('[data-practice]'); if (p) { closeDrawer(true); startPractice(p.dataset.practice); return; }
@@ -260491,7 +260495,7 @@ var HDJ = (function () {
       var c = el('div', 'hb-card');
       c.innerHTML = '<div class="hb-tiles"><div class="hb-tile"><div class="l">Evidence-based mastery</div><div class="v">' + (s ? pct(x.E) : '–') + '</div><div class="s">' + esc(s ? x.status : 'Not started') + '</div></div><div class="hb-tile"><div class="l">Retention</div><div class="v">' + (s ? pct(x.Rnow) : '–') + '</div></div><div class="hb-tile"><div class="l">In the Path</div><div class="v" style="font-size:20px">' + (x.completed ? 'Completed' : 'Not yet') + '</div><div class="s">' + (x.direct && x.direct.n ? x.direct.nOK + ' of ' + x.direct.n + ' answers right here' : 'no answers here yet') + '</div></div></div>' +
         '<div class="hb-ladh" style="margin:14px 0 6px">Skills in this level</div><div class="hb-chips">' + (x.skills || L.skills || []).map(function (k) { var sk = M.m.skills[k] || {}; return '<button type="button" class="hb-chip" data-skill="' + esc(k) + '">' + sicon(sk.status || 'Not started') + '<span class="id">' + esc(k) + '</span><span class="tx">' + esc(skillText(k)) + '</span></button>'; }).join('') + '</div>' +
-        '<div class="hb-row" style="margin-top:14px"><button class="btn primary" type="button" data-openlv="' + n + ':' + key + '">Practice this level in the Path</button>' + (typeof HDJ !== 'undefined' && CAT.levels['ch' + n + ':' + key] ? '<button class="btn ghost" type="button" data-warm="ch' + n + ':' + key + '">Warm up in the Dojo first</button>' : '') + '</div>';
+        '<div class="hb-row" style="margin-top:14px"><button class="btn primary" type="button" data-openlv="' + n + ':' + key + '">Practice this level in the Path</button>' + (typeof HDJ !== 'undefined' && CAT.levels['ch' + n + ':' + key] ? '<button class="btn ghost" type="button" data-warm="ch' + n + ':' + key + '">Warm up in the Arena first</button>' : '') + '</div>';
       b.appendChild(c);
       if (typeof HTC !== 'undefined' && HTC.has('ch' + n + ':' + key)) { var tcw = el('div', 'tc-indrawer', '<div class="hb-ladh" style="margin:16px 0 8px">Skills &amp; tactics for this level</div>' + HTC.levelCard('ch' + n + ':' + key, {}) + '<a class="hb-link" href="#ch/' + n + '/tactics/' + key + '" data-closedrawer="1">All the tactics for Chapter ' + n + '</a>'); b.appendChild(tcw); HTC.wire(tcw); }
       b.onclick = function (e) {
