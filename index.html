@@ -2818,6 +2818,53 @@ span.r-x, span.r-n, span.r-o, span.r-g, span.r-w, b.r-n, b.r-o { color: var(--c)
 .rs-pan .rs-post, .rs-pan .rs-arm, .rs-pan .rs-cord, .rs-pan .rs-dish { fill: none; stroke: var(--mm-night-ink-2); stroke-width: 2; stroke-linecap: round; } .rs-pan.held .rs-arm, .rs-pan.held .rs-dish { stroke: var(--mm-held); }
 .rs-pan figcaption { display: grid; gap: 2px; font-size: 13.5px; } .rs-pan figcaption span { color: var(--mm-night-ink-2); } .rs-pan.held figcaption span { color: var(--mm-held); } .rs-pan small { color: var(--mm-night-ink-3); font-size: 12.5px; }
 
+/* ---------- MMCard: the spell card (kit/cards.js; POLICY §1j). One row collapsed; the cast's still and how to cast it, open.
+   The page's own surface and ink (light and dark); the still sits in the night frame of the stage. Laid out by its own width. */
+.mc-list { display: grid; gap: 8px; container: mc / inline-size; font-family: var(--mm-ui); color: var(--mm-ink); }
+.mc-card { --mc-c: var(--mm-accent-2); position: relative; background: var(--mm-surface); border: 1px solid var(--mm-line); border-radius: 14px; overflow: hidden; }
+.mc-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--mc-c); }
+.mc-card.open { border-color: var(--mm-line-2); box-shadow: 0 6px 22px rgba(10, 20, 30, .10); }
+.mc-h { margin: 0; font: inherit; }
+.mc-row { all: unset; box-sizing: border-box; width: 100%; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto; align-items: center; gap: 4px 12px; padding: 10px 14px 10px 16px; min-height: 56px; cursor: pointer; }
+span.mc-row { cursor: default; }
+.mc-row:hover { background: var(--mm-surface-2); }
+.mc-row:focus-visible { outline: 3px solid var(--mm-focus); outline-offset: -3px; border-radius: 14px; }
+.mc-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; min-width: 0; }
+.mc-name { font-family: var(--mm-display); font-size: 21px; line-height: 1.15; color: var(--mm-ink); }
+.mc-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.mc-facts { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 13px; color: var(--mm-ink-2); }
+.mc-f i { font-style: normal; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--mm-muted); } .mc-f b { color: var(--mm-ink); font-weight: 700; }
+.mc-reach { font-style: italic; }
+.mc-state { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mm-ink-2); border: 1px solid var(--mm-line-2); border-radius: 999px; padding: 3px 8px; }
+.mc-chev { width: 10px; height: 10px; border-right: 2px solid var(--mm-ink-2); border-bottom: 2px solid var(--mm-ink-2); transform: rotate(45deg) translateY(-3px); transition: transform 160ms ease; }
+.mc-card.open .mc-chev { transform: rotate(225deg) translate(-3px, 0); }
+:root[data-motion="reduced"] .mc-chev { transition: none; } @media (prefers-reduced-motion: reduce) { .mc-chev { transition: none; } }
+.mc-body { padding: 4px 16px 16px 18px; display: grid; gap: 12px; }
+.mc-does { margin: 0; font-size: 15px; line-height: 1.5; color: var(--mm-ink); }
+.mc-grid { display: grid; gap: 14px; }
+@container mc (min-width: 700px) { .mc-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); align-items: start; } .mc-row { grid-template-columns: 34px minmax(0, 1fr) auto auto; } .mc-main { flex-wrap: nowrap; } .mc-name { flex: 0 0 auto; } }
+.mc-still { margin: 0; border-radius: 14px; overflow: hidden; display: grid; gap: 0; background: var(--mm-night-0); }
+.mc-still *, .mc-still *::before, .mc-still *::after { animation: none !important; transition: none !important; }   /* a still: the end frame, never animated */
+.mc-still .mm-plan { min-height: 0; max-height: none; border-radius: 0; aspect-ratio: 4 / 3; } .mc-still .mm-plan.mp-nl { aspect-ratio: 10 / 3; }
+.mc-still .mm-inst { border-radius: 0; }
+.mc-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0; background: var(--mm-night-0); }
+.mc-panel { margin: 0; background: var(--mm-night-0); box-shadow: inset 0 0 0 .5px var(--mm-night-line-2); } .mc-panel figcaption { padding: 6px 10px 0; font-size: 12px; color: var(--mm-night-ink-2); }
+.mc-cap { padding: 8px 12px 10px; font-size: 13px; line-height: 1.45; color: var(--mm-night-ink-2); }
+.mc-wait { margin: 0; padding: 28px 14px; color: var(--mm-night-ink-3); font-size: 13px; text-align: center; }
+.mc-how h4 { margin: 0 0 6px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--mm-ink-2); }
+.mc-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.mc-steps > li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; padding: 9px 10px; border-radius: 10px; background: var(--mm-surface-2); border: 1px solid var(--mm-line); }
+.mc-n { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: var(--mm-ink); color: var(--mm-surface); }
+.mc-act { margin: 0; font-size: 14px; } .mc-rune { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--mm-ink-2); margin-left: 4px; }
+.mc-rule { margin: 3px 0 0; font-size: 14px; line-height: 1.5; color: var(--mm-ink); }
+.mc-worked { margin: 5px 0 0; font-family: var(--mm-math); font-size: 15px; color: var(--mm-ink); } .mc-worked > span:first-child { font-family: var(--mm-ui); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mm-muted); margin-right: 6px; }
+.mc-proper { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--mc-c); background: color-mix(in srgb, var(--mc-c) 12%, transparent); font-size: 14px; line-height: 1.5; }
+.mc-trap { margin: 8px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--mm-ink-2); } .mc-trap b { color: var(--mm-ink); margin-right: 4px; }
+.mc-dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px 14px; border-top: 1px solid var(--mm-line); padding-top: 10px; }
+.mc-dl div { min-width: 0; } .mc-dl dt { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mm-muted); } .mc-dl dd { margin: 0; font-size: 14px; color: var(--mm-ink); }
+.mc-acts:empty { display: none; } .mc-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+@container mc (max-width: 420px) { .mc-row { padding: 10px 10px 10px 14px; gap: 4px 10px; } .mc-name { font-size: 19px; } .mc-body { padding: 4px 12px 14px 14px; } .mc-state { display: none; } }
+
 .hb-update { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 60; display: flex; align-items: center; gap: 12px;
   background: var(--ink); color: var(--bg); padding: 8px 8px 8px 16px; border-radius: 999px; box-shadow: var(--shadow); font-size: 15px; max-width: calc(100vw - 24px); }
 .hb-update button { font: inherit; font-weight: 700; border: 0; border-radius: 999px; padding: 6px 14px; background: var(--accent-ink, #fff); color: var(--accent, #2d6a86); cursor: pointer; }
@@ -57379,10 +57426,47 @@ var SPELLS = (function () {
       proper: 'The blade passes through and the cut face glows on the solid.',
       trap: 'Adding the base’s sides for the diagonal instead of using the theorem.', held: 'In the Training Ground it trains cross-sections; in a duel it cuts into a region.', adapt: ['solid', 'select', 'equation'] })
   };
+  // POLICY §1j.5: Math Mage has ONE list of Orders, the four the duel attunes its orbs to: Lines, Measure, Proportion and Number.
+  // Every spell is in exactly one; its colour and its symbol are the standalone Obscuratum's (E: src/ui.js SCOL; src/cards.js OICON),
+  // so the hub and the duel read the same. glyph: E's SVG markup in a 20 × 20 box, drawn dark on the Order's colour (a line through
+  // two points, a right triangle, a circle with a slice, ±): an Order is known without colour. The finer family a spell
+  // belongs to is its `kind` (KINDS), shown on the card, never as an Order.
+  var ORDERS = [
+    { id: 'lines', name: 'Lines', color: '#a9c6ff', glyph: '<line x1="4" y1="15" x2="16" y2="5" stroke-width="2"/><circle cx="6.6" cy="12.8" r="1.9" stroke="none"/><circle cx="13.4" cy="7.2" r="1.9" stroke="none"/>', spells: ['beam', 'far-lantern', 'pursuit', 'volley', 'line-test', 'crossing', 'glyph', 'stepping-stones', 'doubling'] },
+    { id: 'measure', name: 'Measure', color: '#7fdcc4', glyph: '<path d="M5 15 L15 15 L5 5 Z" fill="none" stroke-width="1.9" stroke-linejoin="round"/><path d="M5 12.6 H7.4 V15" fill="none" stroke-width="1.3"/>', spells: ['sounding', 'blast', 'shield', 'threefold', 'smoke', 'floor', 'plan', 'court', 'vessel', 'cylinder', 'net', 'slice', 'mirror-turn', 'polygon-path'] },
+    { id: 'ratio', name: 'Proportion', color: '#f0b98a', glyph: '<circle cx="10" cy="10" r="5.6" fill="none" stroke-width="1.8"/><path d="M10 10 L10 4.4 A5.6 5.6 0 0 1 15.3 11.8 Z" stroke="none"/>', spells: ['true-form', 'courier', 'dilate', 'mend', 'waning', 'wheel', 'ratio-line', 'reservoir'] },
+    { id: 'number', name: 'Number', color: '#c3b4ff', glyph: '<path d="M10 4.2 V11 M6.6 7.6 H13.4 M6.6 14.6 H13.4" fill="none" stroke-width="2.2"/>', spells: ['tally', 'balance-of-words', 'echo', 'veil', 'mirror-ward', 'unwinding', 'narrow-way', 'ward', 'fog', 'fine-reading', 'ledger', 'level-seal', 'bracket-seal', 'sorting'] }
+  ];
+  var KINDS = [
+    { id: 'lines', name: 'lines', spells: ['beam', 'far-lantern', 'pursuit', 'volley', 'line-test', 'crossing', 'ratio-line', 'dilate'] },
+    { id: 'balance', name: 'the balance', spells: ['level-seal', 'bracket-seal', 'balance-of-words', 'unwinding', 'sorting'] },
+    { id: 'numberline', name: 'the number line', spells: ['echo', 'tally', 'courier', 'ledger', 'fine-reading', 'true-form'] },
+    { id: 'limits', name: 'limits', spells: ['ward', 'threefold', 'mirror-ward', 'veil', 'fog', 'smoke', 'narrow-way'] },
+    { id: 'shares', name: 'shares', spells: ['mend', 'waning', 'wheel', 'reservoir'] },
+    { id: 'measure', name: 'measure', spells: ['blast', 'shield', 'floor', 'plan', 'court', 'sounding'] },
+    { id: 'solids', name: 'solids', spells: ['vessel', 'cylinder', 'net', 'slice'] },
+    { id: 'angles', name: 'angles', spells: ['mirror-turn', 'polygon-path'] },
+    { id: 'growth', name: 'growth', spells: ['stepping-stones', 'glyph', 'doubling'] }
+  ];
+  var ORDER_OF = {}, KIND_OF = {}; ORDERS.forEach(function (o) { o.spells.forEach(function (id) { ORDER_OF[id] = o.id; }); }); KINDS.forEach(function (k) { k.spells.forEach(function (id) { KIND_OF[id] = k.id; }); });
+  var REACH = {
+    'beam': 'one straight line from your focus', 'far-lantern': 'a far line and its range', 'pursuit': 'where two moving paths meet',
+    'blast': 'a whole disc, scaled', 'volley': 'a row of points climbing in steps', 'ward': 'one side of a stated limit', 'threefold': 'a triangle held by three walls',
+    'mirror-ward': 'a limit turned by a negative', 'shield': 'a disc over a whole region', 'sounding': 'every point at one distance', 'line-test': 'which side of a line',
+    'echo': 'the two places at one distance', 'crossing': 'the point where two lines meet', 'wheel': 'a share of a circle graph', 'ratio-line': 'a rate from the origin',
+    'fine-reading': 'one exact value, even repeating', 'veil': 'a band within a reach', 'fog': 'a stretch between two limits', 'smoke': 'a box of the plane',
+    'mend': 'a share of what is missing, restored', 'waning': 'the same share lost each hour', 'ledger': 'a signed reserve, kept true', 'level-seal': 'one equation, one move',
+    'bracket-seal': 'an equation with brackets', 'sorting': 'every form that is the same', 'mirror-turn': 'a beam turned at a mirror', 'polygon-path': 'a path round a polygon',
+    'floor': 'a floor from its area', 'plan': 'a plan to the ground and back', 'court': 'a triangle that can close', 'glyph': 'a growing pattern on a line',
+    'doubling': 'when multiplying overtakes', 'reservoir': 'filling to a need', 'vessel': 'what a box holds', 'cylinder': 'a cylinder and its scaled twin',
+    'net': 'every face of a solid', 'slice': 'the face a cut leaves', 'dilate': 'a figure scaled from the origin', 'tally': 'a reserve walked by gains and debts',
+    'stepping-stones': 'any figure of a pattern', 'balance-of-words': 'words made an equation', 'true-form': 'one number in every form', 'courier': 'a place after a journey',
+    'narrow-way': 'the numbers within a limit', 'unwinding': 'steps undone in reverse'
+  };
   var SIZE = { 3: 'lesser', 4: 'greater', 5: 'high' };
   var LIST = ROWS.map(function (r) {
     return { id: r[0], verb: r[1], stage: r[2], form: r[3], runes: r[4].slice(), ideas: r[5].slice(), tools: r[6].slice(),
-             early: !!r[7], size: SIZE[r[4].length], skills: (K[r[0]] || K_PROV[r[0]]).slice(), kProvisional: !K[r[0]],
+             early: !!r[7], size: SIZE[r[4].length], order: ORDER_OF[r[0]] || null, kind: KIND_OF[r[0]] || null, reach: REACH[r[0]] || null, skills: (K[r[0]] || K_PROV[r[0]]).slice(), kProvisional: !K[r[0]],
              card: CARD[r[0]] ? CARD[r[0]].card : null, lore: CARD[r[0]] ? CARD[r[0]].lore : null,
              gens: CARD[r[0]] ? (r[4].length > 3 ? { friendly: r[0] + '.friendly', full: r[0] + '.full', crown: r[0] + '.crown' } : { friendly: r[0] + '.friendly', full: r[0] + '.full' }) : null };
   });
@@ -57390,7 +57474,8 @@ var SPELLS = (function () {
   LIST.forEach(function (s) { if (s.card && ['beam', 'far-lantern'].indexOf(s.id) >= 0) s.card.values.duel.base = 40; if (s.card && ['echo', 'sounding'].indexOf(s.id) >= 0) s.card.values.duel.base = 0; });
   var BY = {}; LIST.forEach(function (s) { BY[s.id] = s; });
   function name(id) { if (!BY[id]) throw new Error('SPELLS: unknown spell ' + id); return N ? N.spells[id] : id; }
-  return { LIST: LIST, IDS: LIST.map(function (s) { return s.id; }), byId: function (id) { return BY[id] || null; }, name: name,
+  var OBY = {}, KBY = {}; ORDERS.forEach(function (o) { OBY[o.id] = o; }); KINDS.forEach(function (k) { KBY[k.id] = k; });
+  return { ORDERS: ORDERS, KINDS: KINDS, kindOf: function (id) { var sp = BY[id]; return sp && sp.kind ? KBY[sp.kind] : null; }, orderOf: function (id) { var sp = BY[id]; return sp && sp.order ? OBY[sp.order] : null; }, LIST: LIST, IDS: LIST.map(function (s) { return s.id; }), byId: function (id) { return BY[id] || null; }, name: name,
            SLICE: ['far-lantern', 'beam', 'echo', 'sounding'], VERBS: ['strike', 'block', 'reveal', 'obscure', 'heal', 'bind', 'aim', 'shape', 'charge', 'conjure'] };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = SPELLS;
@@ -57657,7 +57742,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = MAGE_GENS;
           decisions: ['the legs are the differences of the coordinates', 'add the squares, then take the root'], boxes: [rangeBox('range', w.dx, w.dy, strength, bt)] }),
         G.part({ id: 'P2', tier: tier, spell: 'far-lantern', working: 'beam-rule', look: 'beam', est: strength === 'friendly' ? 90 : 120, instruments: ['plane'], ideas: [5, 6], support: ['M1'],
           prompt: 'A beam runs from ' + FL + '. Write the rule y = mx + b of the beam.',
-          givens: PL.givens(B.named, B.draw.concat([rangeSeg]), [{ box: 'line', as: 'line', from: PL.at(F) }], null, [{ ref: 'P2.line', kind: 'line', label: 'the beam' }]),
+          givens: PL.givens(B.named, B.draw.concat([rangeSeg]), [{ box: 'line', as: 'line', from: PL.at(F), word: 'beam' }], null, [{ ref: 'P2.line', kind: 'line', label: 'the beam' }]),
           decisions: ['rise over run, not run over rise', 'the start is the height where x is 0'], boxes: [lineBox(w, strength, bt)] }),
         G.part({ id: 'P3', tier: tier, spell: 'far-lantern', working: 'beam-height', look: 'marks', est: strength === 'friendly' ? 60 : 90, instruments: ['plane'], ideas: [5], support: ['R9'], uses: ['P2.line'],
           prompt: 'A beam runs from ' + FL + '. How high is the beam where x = ' + Q.show(x3) + '?',
@@ -57688,7 +57773,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = MAGE_GENS;
       var parts = [
         G.part({ id: 'P1', tier: tier, spell: 'beam', working: 'beam-rule', look: 'beam', est: strength === 'friendly' ? 90 : 120, instruments: ['plane'], ideas: [5, 6], support: ['M1'],
           prompt: 'On the plane, a beam leaves your focus F' + Q.pt(F) + ' and passes through the mark L' + Q.pt(L) + '. Write its rule y = mx + b.',
-          givens: PL.givens(B.named, B.draw, [{ box: 'line', as: 'line', from: PL.at(F) }], null, [{ ref: 'P1.line', kind: 'line', label: 'the beam' }]),
+          givens: PL.givens(B.named, B.draw, [{ box: 'line', as: 'line', from: PL.at(F), word: 'beam' }], null, [{ ref: 'P1.line', kind: 'line', label: 'the beam' }]),
           decisions: ['rise over run, not run over rise', 'the start is the height where x is 0'], boxes: [lineBox(w, strength, bt)] }),
         G.part({ id: 'P2', tier: tier, spell: 'beam', working: 'beam-height', look: 'marks', est: strength === 'friendly' ? 60 : 90, instruments: ['plane'], ideas: [5], support: ['R9'], uses: ['P1.line'],
           prompt: 'A beam runs from ' + FL + '. How high is the beam where x = ' + Q.show(xh) + '?',
@@ -60750,7 +60835,7 @@ var H04 = (function () {
     var key = two('line', { m: S(l.m), b: S(l.b) }, { m: S(m2), b: S(b2) });
     if (!Q.eq(at(l, O[0]), O[1]) || !Q.eq(at(l, A[0]), A[1])) throw new Error('H04: the beam misses O or A');
     return { prompt: 'The beam leaves the bow at O' + Q.point(O) + '. It passes through the sighting post at A' + Q.point(A) + '. Write the rule of the beam in the form y = mx + b.',
-      givens: { named: [named('O', 'the bow', [S(O[0]), S(O[1])]), named('A', 'the sighting post', [S(A[0]), S(A[1])]), named('the beam', 'the line asked for: from O through A')], draw: [pItem('O', O, 'the bow'), pItem('A', A, 'the sighting post')], casts: [{ box: 'line', as: 'line', from: [S(O[0]), S(O[1])] }] },
+      givens: { named: [named('O', 'the bow', [S(O[0]), S(O[1])]), named('A', 'the sighting post', [S(A[0]), S(A[1])]), named('the beam', 'the line asked for: from O through A')], draw: [pItem('O', O, 'the bow'), pItem('A', A, 'the sighting post')], casts: [{ box: 'line', as: 'line', word: 'beam', from: [S(O[0]), S(O[1])] }] },
       boxes: [{ id: 'line', key: key, ver: { value: { m: S(m2), b: S(b2) }, by: 'through A: b = ' + Q.show(A[1]) + ' − m × ' + Q.show(A[0]) + '; checked at O' },
         tags: tags(key, [['runrise', { m: S(Q.div(Q.of(1), l.m)), b: S(l.b) }], ['startsign', { m: S(l.m), b: S(Q.neg(l.b)) }]]) }] };
   }
@@ -62352,6 +62437,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
       picture: '(host: Element, { plan: HallPlan, vals, parts: [{ id, label }] }) → { el, light(id | ids), set(ids), lit(), listText(), destroy() }   // items and casts carry part: id'
     },
     MMScene: { result: '(host: Element, { result: C\u2019s MEASURE.attemptResult, voices: A\u2019s ResultVoices, gauges?: { now, last? } (C\u2019s GAUGES.cast as it returns, or MMGauges readings), sigils?: { H1: svg | { plan, history } }, judgement?: { orb, asks } (the Judgement\u2019s Hall), regions?: K.REGIONS (the star order), names?, attempt? }) → { el, listText(), destroy() }   // M4: the result display', sigil: '(plan: HallPlan, history: [{ casts, vals, verdict }], { size?, title? }) → svg string   // kit/scenes.js (M3): the Hall\u2019s working as one figure', words: '(plan, history) → [string]' },
+    MMCard: { list: '(host: Element, items: [spellId | { id, facts?: { charge?, power?, level?, reach? }, still?: Still | () => Still, state? }], { open?, single?, still?(item), onOpen?(item, card), onClose?, label? }) → { el, open(id), close(id), toggle(id), isOpen(id), card(id), update(items), rowText(), destroy() }   // kit/cards.js (POLICY §1j): the spell card for the Codex, the Training Ground and the drawer',
+      one: '(host: Element, item, { open?: true, collapsible?, still?, onOpen?, onClose? }) → { el, body, acts, open(), close(), toggle(), isOpen(), destroy() }', badge: '(orderId) → svg string (the Order by colour and glyph)', rowText: '(item) → string',
+      Still: '{ plan, vals } | { inst, vals } | { panels: [{ plan | inst, vals, label? }] } | { svg, label }, with worked?: [string] (one per step) and caption?: the end frame of a worked casting on other numbers, drawn with final()' },
     MMInst: { mount: '(host: Element, inst: Inst, { aria? }) → { el, play(vals, verdict) → Promise, final(…), floor(), castText(vals), listText(), destroy() }   // balance { left, right, unknown } · table { cols, rows } · bar / pie { whole, unit?, parts } · solid { shape, dims, unit? }' },   // kit/instruments.js (M3)
     OBSC: { svg: '({ view: "axo"|"plan", label? }) → svg string',     // kit/obscuratum.js (M1)
       board: '(host: Element, { foeName, foeShort, foeLevel?, spellName?(id), live?: Element, onPick?([x, y]), onAgain?() }) → { el, update(state, { shown? }), turn(side, text?), intro() → Promise, replay() → Promise, busy(), play() → Promise, listText(), drawnText(), destroy() }',   // M2
@@ -62567,6 +62655,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
       t('kit/stage.js has the select-all look, and a Hall refuses fewer than five choices (S\u2019s ruling)', !!stg && /function selBox/.test(stg) && /mode === 'hall' \? 5 : 2/.test(stg));
       t('kit/gauges.js has the compact Halls strip (M2)', !!g && /compact/.test(g));
       t('kit/spellcraft.js publishes LOOKS and classify', !!spc && /LOOKS: LOOKS/.test(spc) && /classify: classify/.test(spc));
+      var crd = src('cards.js'); t('kit/cards.js publishes MMCard (list, one, badge, rowText), refuses a key, and draws its still with final() (POLICY §1j)', !!crd && /G\.MMCard = api/.test(crd) && /list: list, one: one, badge: badge/.test(crd) && /a key may never reach a card/.test(crd) && /surf\.final\(/.test(crd) && !/surf\.play\(/.test(crd));
       var OWN = ['tokens.css', 'stage.css', 'fonts.css', 'gauges.js', 'cast.js', 'field.js', 'scenes.js', 'glyph.js', 'stage.js', 'spellcraft.js', 'looks.js', 'obscuratum.js', 'duel_link.js', 'instruments.js'];
       var AVOID = /\b(tlachtli|pitz|xibalba|nahua|nahuatl|sensei|teotlachtli)\b/i, RUNIC = /[ᚠ-᛿]/, MARTIAL = /\b(dojo|sensei|belts?|kata|karate|judo|ninja|samurai|martial|sparring|spar|black belt|mathjitsu)\b/i;
       OWN.forEach(function (f) { var s = src(f); if (s === null) return;
@@ -63155,7 +63244,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
      p.floor()                                             // back to the givens and what is established
      p.update(plan)                                        // a new part's plan on the same plane (the roll)
      p.castText(vals) → string · p.listText() / p.drawnText() → string[] (the gate: list = drawing) · p.destroy()
-   CastMap: { box, as: 'length', from, toward } | { box, as: 'line', from? } | { box, as: 'choices', at: { id: [x, y] } }
+   CastMap: { box, as: 'length', from, toward } | { box, as: 'line', from?, word? ('line' unless named, e.g. 'beam') } | { box, as: 'choices', at: { id: [x, y] } }
             | { box, as: 'y', x } | { box, as: 'point' } | { box, as: 'note' }.
    Stage boxes: a point box P is P.x and P.y; a line box is m and b (or L.m and L.b); select-all is an array of choice ids.
    NO LEAK: the plan refuses any field named key, answer or solution, and the verdict is passed in, never computed here. */
@@ -63201,8 +63290,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
       var mx = NL ? (frame.x1 - frame.x0) * .06 : .8; E0 = NL ? { x0: frame.x0 - mx, x1: frame.x1 + mx, y0: -1.6, y1: 2.2 } : { x0: frame.x0 - .8, x1: frame.x1 + .8, y0: frame.y0 - .8, y1: frame.y1 + .8 };
       if (wrap) wrap.classList.toggle('mp-nl', NL); }
     load(plan);
-    function size() { var r = wrap.getBoundingClientRect(); W = Math.max(120, r.width || 400); H = Math.max(120, r.height || 300); }
-    function fit(e) { var w = e.x1 - e.x0, h = e.y1 - e.y0, sc = Math.max(w / W, h / H), cw = sc * W, ch = sc * H, cx = (e.x0 + e.x1) / 2, cy = (e.y0 + e.y1) / 2; return { x0: cx - cw / 2, x1: cx + cw / 2, y0: cy - ch / 2, y1: cy + ch / 2 }; }
+    function size() { var r = wrap.getBoundingClientRect(); W = Math.max(60, r.width || 400); H = Math.max(40, r.height || 300); }   // the real box (a 200 px number line is 60 px tall): the view fits it exactly
+    function fit0(e) { var w = e.x1 - e.x0, h = e.y1 - e.y0, sc = Math.max(w / W, h / H), cw = sc * W, ch = sc * H, cx = (e.x0 + e.x1) / 2, cy = (e.y0 + e.y1) / 2; return { x0: cx - cw / 2, x1: cx + cw / 2, y0: cy - ch / 2, y1: cy + ch / 2 }; }
+    /* a number line keeps room in pixels under the line for its numbers (24 px down, 13 px type) and over it for a point's label,
+       whatever the host's size (D2: the numbers were cut at the foot in a 200 px panel); the scale depends on the room, so settle it */
+    function fit(e) { if (!NL) return fit0(e); var f = fit0(e);
+      for (var i = 0; i < 4; i++) { var sc = (f.x1 - f.x0) / W, need = { x0: e.x0, x1: e.x1, y0: Math.min(e.y0, -36 * sc), y1: Math.max(e.y1, 30 * sc) }; if (f.y0 <= need.y0 + 1e-9 && f.y1 >= need.y1 - 1e-9) break; f = fit0(need); }
+      return f; }
     function uni(a, b) { return { x0: Math.min(a.x0, b.x0), x1: Math.max(a.x1, b.x1), y0: Math.min(a.y0, b.y0), y1: Math.max(a.y1, b.y1) }; }
     function lerpE(a, b, t) { return { x0: a.x0 + (b.x0 - a.x0) * t, x1: a.x1 + (b.x1 - a.x1) * t, y0: a.y0 + (b.y0 - a.y0) * t, y1: a.y1 + (b.y1 - a.y1) * t }; }
     function clear(g) { while (g.firstChild) g.removeChild(g.firstChild); }
@@ -63210,11 +63304,20 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
     function bb(t) { try { var b = t.getBBox(); return b && b.width ? { x0: b.x, x1: b.x + b.width, y0: b.y, y1: b.y + b.height } : null; } catch (e) { return null; } }
     function over(b, list, pad) { return list.some(function (a) { return b.x0 < a.x1 + pad && b.x1 > a.x0 - pad && b.y0 < a.y1 + pad && b.y1 > a.y0 - pad; }); }
     // a label beside a point: the first of eight places that clears the ticks, the icons and the labels already placed
-    function label(text, x, y, cls, taken, r0, optional, parent, only) { var t = el('text', { class: (cls && /^mp-/.test(cls) ? cls : 'mp-lab ' + (cls || '')), 'font-size': (cls === 'mp-ctag' || /^mp-ctag/.test(cls || '') ? 12.5 : 13.5) * upp, 'stroke-width': 3 * upp }, parent || Llab); /* the halo in plan units: a browser that ignores vector-effect on text would draw 3 units (a disc on a small frame) */ t.textContent = text; var r = (r0 || 12) * upp, first = null, C = [];
+    function label(text, x, y, cls, taken, r0, optional, parent, only, short) { var t = el('text', { class: (cls && /^mp-/.test(cls) ? cls : 'mp-lab ' + (cls || '')), 'font-size': (cls === 'mp-ctag' || /^mp-ctag/.test(cls || '') ? 12.5 : 13.5) * upp, 'stroke-width': 3 * upp }, parent || Llab); /* the halo in plan units: a browser that ignores vector-effect on text would draw 3 units (a disc on a small frame) */ t.textContent = text; var r = (r0 || 12) * upp, first = null, C = [];
       [1, 2.2].forEach(function (k) { var q = r * k + (k > 1 ? 10 * upp : 0); C.push([q, q + 11 * upp, 'start'], [q, -q, 'start'], [-q, -q, 'end'], [-q, q + 11 * upp, 'end'], [0, -q - 4 * upp, 'middle'], [0, q + 15 * upp, 'middle'], [q + 6 * upp, 4 * upp, 'start'], [-q - 6 * upp, 4 * upp, 'end']); });
       if (only) C = only.map(function (c) { return [c[0] * upp, c[1] * upp, c[2]]; });
+      /* D2 (Threefold's five points): a point's name is never nearer another marker than its own, so it cannot be read as the
+         neighbour's; the first pass keeps that rule, the second drops it only when nothing else fits */
+      var ax = x, ay = SY(y); function dpt(b, px, py) { var dx = Math.max(b.x0 - px, 0, px - b.x1), dy = Math.max(b.y0 - py, 0, py - b.y1); return Math.sqrt(dx * dx + dy * dy); }
+      function margin(b) { if (optional) return Infinity; var own = dpt(b, ax, ay), m = Infinity; taken.forEach(function (a) { if (!a.icon) return; var cx = (a.x0 + a.x1) / 2, cy = (a.y0 + a.y1) / 2; if (Math.abs(cx - ax) + Math.abs(cy - ay) > 1e-6 * upp) m = Math.min(m, dpt(b, cx, cy) - own); }); return m; }   // how much nearer its own marker than any other
+      var best = null;
       for (var i = 0; i < C.length; i++) { t.setAttribute('x', x + C[i][0]); t.setAttribute('y', SY(y) + C[i][1]); t.setAttribute('text-anchor', C[i][2]); var b = bb(t); if (!b) return t; if (!i) first = b;
-        if (!over(b, taken, 2 * upp) && b.x0 >= view.x0 && b.x1 <= view.x1 && b.y0 >= -view.y1 && b.y1 <= -view.y0) { taken.push(b); return t; } }
+        if (over(b, taken, 2 * upp) || b.x0 < view.x0 || b.x1 > view.x1 || b.y0 < -view.y1 || b.y1 > -view.y0) continue;
+        var mg = margin(b); if (mg >= 1 * upp) { taken.push(b); return t; }   // the first free place that is plainly its own
+        if (!best || mg > best.mg) best = { i: i, b: b, mg: mg }; }
+      if (short && short !== text) { t.parentNode.removeChild(t); return label(short, x, y, cls, taken, r0, optional, parent, only, null); }   // crowded: the point's name alone (its coordinates are in the words)
+      if (best) { t.setAttribute('x', x + C[best.i][0]); t.setAttribute('y', SY(y) + C[best.i][1]); t.setAttribute('text-anchor', C[best.i][2]); taken.push(best.b); return t; }   // else the free place that favours its own marker most
       if (optional) { t.parentNode.removeChild(t); return null; }   // it is in "The plan, in words"; never drawn over the plan's numbers or cut by its edge
       t.setAttribute('x', x + C[0][0]); t.setAttribute('y', SY(y) + C[0][1]); t.setAttribute('text-anchor', C[0][2]); if (first) taken.push(first); return t; }
     function drawGrid() {
@@ -63232,7 +63335,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
       for (y = Math.ceil(vb.y0 / st) * st; y <= vb.y1; y += st) if (y) el('text', { x: ay0 - 6 * upp, y: SY(y) + 4 * upp, 'text-anchor': 'end' }, Lticks).textContent = fmt(y);
       el('text', { x: vb.x1 - 8 * upp, y: SY(ax0) - 7 * upp, 'text-anchor': 'end', class: 'mp-axn' }, Lticks).textContent = 'x';
       el('text', { x: ay0 + 8 * upp, y: SY(vb.y1) + 16 * upp, class: 'mp-axn' }, Lticks).textContent = 'y';
-      [].slice.call(Lticks.childNodes).forEach(function (t) { var q = bb(t); if (q && (q.x0 < vb.x0 || q.x1 > vb.x1)) Lticks.removeChild(t); });   // no number cut by the edge
+      [].slice.call(Lticks.childNodes).forEach(function (t) { var q = bb(t); if (q && (q.x0 < vb.x0 || q.x1 > vb.x1 || q.y0 < -vb.y1 || q.y1 > -vb.y0)) Lticks.removeChild(t); });   // no number cut by any edge
     }
     // the number line: one axis with its ticks and numbers, an arrow at each end, nothing above or below it
     function drawLine() { var vb = view, ppu = 1 / upp, st = step(ppu / 1.4), x, a0 = frame.x0 - (frame.x1 - frame.x0) * .04, a1 = frame.x1 + (frame.x1 - frame.x0) * .04;
@@ -63291,9 +63394,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
       [].forEach.call(Lticks.childNodes, function (t) { var q = bb(t); if (q) taken.push(q); });
       var labs = [];
       items.forEach(function (it) { var c = colOf(it), lent = seal(it) === 'lent', g = el('g', { class: 'mp-item ' + seal(it), 'data-part': it.part || null }, Litems), w = itemWords(it);
-        if (it.kind === 'point') { var p = ptOf(it.at), r = icon(it.icon || 'dot', p[0], p[1], c, g, lent), ib = { x0: p[0] - r * upp, x1: p[0] + r * upp, y0: SY(p[1]) - r * upp, y1: SY(p[1]) + r * upp, icon: 1 }; taken.push(ib); icons.push(ib); labs.push([it.name ? it.name + (NL ? '(' + fmt(p[0]) + ')' : ptxt(p)) : it.label || (NL ? fmt(p[0]) : ptxt(p)), p[0], p[1], seal(it), r]); }
+        if (it.kind === 'point') { var p = ptOf(it.at), r = icon(it.icon || 'dot', p[0], p[1], c, g, lent), ib = { x0: p[0] - r * upp, x1: p[0] + r * upp, y0: SY(p[1]) - r * upp, y1: SY(p[1]) + r * upp, icon: 1 }; taken.push(ib); icons.push(ib); labs.push([it.name ? it.name + (NL ? '(' + fmt(p[0]) + ')' : ptxt(p)) : it.label || (NL ? fmt(p[0]) : ptxt(p)), p[0], p[1], seal(it), r, false, null, it.name || null]); }
         else if (it.kind === 'row') { it.at.forEach(function (q, i) { var byX = q[1] == null, p = byX ? [num(q[0]), floorY()] : P2(q), r = byX ? stake(p[0], p[1], c, g) : icon(it.icon || 'dot', p[0], p[1], c, g, lent), ib = { x0: p[0] - r * upp, x1: p[0] + r * upp, y0: SY(p[1]) - r * upp, y1: SY(p[1]) + 18 * upp, icon: 1 }; taken.push(ib); icons.push(ib);
-            if (it.names && it.names[i] != null && (i === 0 || i === it.at.length - 1 || (1 / upp) * Math.abs(num(it.at[1][0]) - num(it.at[0][0])) > 26)) { var t = el('text', { class: 'mp-rown', x: p[0], y: SY(p[1]) - (byX ? 19 : 13) * upp, 'text-anchor': 'middle', 'font-size': 10.5 * upp }, Llab); t.textContent = it.names[i]; } });
+            if (it.names && it.names[i] != null && (i === 0 || i === it.at.length - 1 || (1 / upp) * Math.abs(num(it.at[1][0]) - num(it.at[0][0])) > 26)) { var t = el('text', { class: 'mp-rown', x: p[0], y: SY(p[1]) - (byX ? 19 : 13) * upp, 'text-anchor': 'middle', 'font-size': 10.5 * upp }, Llab); t.textContent = it.names[i]; var nb = bb(t); if (nb) { icons.push(nb); taken.push(nb); } } });   // a row's names are marks too: tick numbers give way, labels keep clear
           var mq = it.at[Math.floor(it.at.length / 2)], lp = mq[1] == null ? [num(mq[0]), floorY()] : P2(mq); if (it.label) labs.push([it.label, lp[0], lp[1], seal(it), 22, true, [[0, -36, 'middle'], [0, 34, 'middle'], [0, -52, 'middle'], [0, 50, 'middle']]]); }
         else if (it.kind === 'segment') { var a = P2(it.a), b2 = P2(it.b); el('line', ns({ x1: a[0], y1: SY(a[1]), x2: b2[0], y2: SY(b2[1]), stroke: c, 'stroke-width': 1.6, 'stroke-dasharray': lent ? '5 4' : null }), g); if (it.label) labs.push([it.label, (a[0] + b2[0]) / 2, (a[1] + b2[1]) / 2, seal(it), 4, true]); }
         else if (it.kind === 'line') { var m = num(it.m), bb0 = num(it.b), e = lineEnds(m, bb0); el('line', ns({ x1: e[0][0], y1: SY(e[0][1]), x2: e[1][0], y2: SY(e[1][1]), stroke: c, 'stroke-width': it.from && it.from !== 'given' ? 2.2 : 1.6, 'stroke-opacity': .85, 'stroke-dasharray': lent ? '7 5' : null }), g);
@@ -63321,7 +63424,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
       // a tick number under an icon gives way to it (the axes in a row stand on the x-axis)
       [].slice.call(Lticks.childNodes).forEach(function (t) { var q = bb(t); if (q && icons.some(function (a) { return q.x0 < a.x1 && q.x1 > a.x0 && q.y0 < a.y1 && q.y1 > a.y0; })) Lticks.removeChild(t); });
       labs.sort(function (p, q) { return (p[5] ? 1 : 0) - (q[5] ? 1 : 0); });   // the points' own names first; the optional labels (lines, rows, segments) where room is left
-      labs.forEach(function (L) { label(L[0], L[1], L[2], L[3] || 'given', taken, L[4], L[5], null, L[6]); });
+      labs.forEach(function (L) { label(L[0], L[1], L[2], L[3] || 'given', taken, L[4], L[5], null, L[6], L[7]); });
       [].forEach.call(Llab.querySelectorAll('.mp-rown'), function (t) { var q = bb(t); if (q) taken.push(q); });
       svg.setAttribute('aria-label', 'The Hall plan. ' + listText().join('. ') + '.');
       if (opt.onDraw) opt.onDraw();   // a redraw (resize, the roll) keeps what the host marked, e.g. the picture's lit parts
@@ -63371,7 +63474,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
     function castText0(vals, ms) {
       return (ms || maps).map(function (mp) { var g = geo(mp, vals), v = valsOf(mp, vals);
         if (mp.as === 'length') return g.ok ? 'Your light ran ' + g.t + ' units from ' + ptxt(g.S) + ' toward ' + ptxt(g.D) + '.' : '';
-        if (mp.as === 'line') return g.ok ? 'Your beam y = ' + g.tm + 'x' + plusTerm(g.tb) + '.' : '';
+        if (mp.as === 'line') return g.ok ? 'Your ' + (mp.word || 'line') + ' y = ' + g.tm + 'x' + plusTerm(g.tb) + '.' : '';   // D2: "line" unless the cast names it ({ as: 'line', word: 'beam' })
         if (mp.as === 'choices') { var L = g.pts.map(function (q) { return ptxt(q.p); }); return L.length ? 'You chose ' + (L.length > 1 ? L.slice(0, -1).join(', ') + ' and ' + L[L.length - 1] : L[0]) + '.' : ''; }
         if (mp.as === 'y') return g.ok ? 'Your height at x = ' + fmt(g.x) + ' is ' + g.t + '.' : '';
         if (mp.as === 'point') return g.ok ? 'Your point (' + g.tx + ', ' + g.ty + ').' : '';
@@ -63954,6 +64057,129 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
       destroy: function () { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); } };
   }
   G.MMInst = { version: '1.0.0', mount: mount, KINDS: Object.keys(KINDS) };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+/* --- mage: kit/cards.js --- */
+/* MMCard (kit/cards.js; owner B; POLICY §1j): the spell card, one component for the Codex, the Training Ground and the
+   Obscuratum's drawer. Needs kit/tokens.css and kit/stage.css; draws its still with MMPlan (kit/looks.js) or MMInst
+   (kit/instruments.js); reads the spells, their Orders and kinds from SPELLS (mage/spells.js) and rune names from RUNES.
+
+   Collapsed, a card is one row: the spell's name, its Order by colour AND symbol (never colour alone), and its key
+   details (Charge, power, reach, level). Expanded: what it does, a still image of the cast (the end frame of a worked casting
+   on its plane or instrument, never animated), how to cast it (each step's rule, without fixed numbers, with the worked
+   numbers beside it), a proper cast, and its facts. Keyboard: Enter or Space opens and closes; Up, Down, Home and End move
+   between the cards of a list. Screen readers hear a disclosure button with the whole row as its name.
+
+   USE
+     var L = MMCard.list(host, items, { open?: id | [ids], single?: bool, still?: (item) → Still, onOpen?(item, card),
+                                        onClose?(item, card), label? })   → { el, open(id), close(id), toggle(id), isOpen(id),
+                                                                             card(id), update(items), destroy() }
+     var C = MMCard.one(host, item, { open?: true, collapsible?: true, still?, onOpen?, onClose? })
+                                                                          → { el, body, acts, open(), close(), toggle(),
+                                                                              isOpen(), destroy() }
+     MMCard.badge(orderId) → svg string   ·   MMCard.order(spellId) → { id, name, color, glyph }   ·   MMCard.rowText(item)
+   item  = a spell id, or { id, facts?: { charge?, power?, reach?, level? }, still?: Still | () => Still, state?: string,
+           name?, order?, card? (each read from SPELLS when absent) }
+   Still = { plan: HallPlan, vals } | { inst: Inst, vals } | { panels: [{ plan | inst, vals, label? }] } | { svg, label }
+           plus optional worked: [string] (the worked numbers, one per step of card.howTo) and caption.
+           The still is the end frame of a worked casting on OTHER numbers than any in front of the student (the caller picks
+           them, e.g. D's demoSeed); it is drawn once, when the card first opens, with final() (no animation).
+   NO LEAK: an item or a still that names a key, answer or solution is refused. */
+(function (G) {
+  'use strict';
+  var LEAK = ['key', 'keys', 'answer', 'answers', 'solution', 'solutions', 'expected', 'correct', 'truth'];
+  function hasLeak(v, d) { return !!v && typeof v === 'object' && (d || 0) < 8 && !v.nodeType && typeof v !== 'function' && Object.keys(v).some(function (k) { return LEAK.indexOf(String(k).toLowerCase()) >= 0 || hasLeak(v[k], (d || 0) + 1); }); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+  var uid = 0;
+  // the four Orders (POLICY §1j.5): SPELLS.ORDERS is the one list; this copy is only for a page that has no SPELLS
+  var ORD0 = [{ id: 'lines', name: 'Lines', color: '#a9c6ff', glyph: '<line x1="4" y1="15" x2="16" y2="5" stroke-width="2"/><circle cx="6.6" cy="12.8" r="1.9" stroke="none"/><circle cx="13.4" cy="7.2" r="1.9" stroke="none"/>' },
+    { id: 'measure', name: 'Measure', color: '#7fdcc4', glyph: '<path d="M5 15 L15 15 L5 5 Z" fill="none" stroke-width="1.9" stroke-linejoin="round"/><path d="M5 12.6 H7.4 V15" fill="none" stroke-width="1.3"/>' },
+    { id: 'ratio', name: 'Proportion', color: '#f0b98a', glyph: '<circle cx="10" cy="10" r="5.6" fill="none" stroke-width="1.8"/><path d="M10 10 L10 4.4 A5.6 5.6 0 0 1 15.3 11.8 Z" stroke="none"/>' },
+    { id: 'number', name: 'Number', color: '#c3b4ff', glyph: '<path d="M10 4.2 V11 M6.6 7.6 H13.4 M6.6 14.6 H13.4" fill="none" stroke-width="2.2"/>' }];
+  function SP() { return G.SPELLS || null; }
+  function orders() { return (SP() && SP().ORDERS) || ORD0; }
+  function orderById(id) { return orders().filter(function (o) { return o.id === id; })[0] || null; }
+  function order(spellId) { var S = SP(); return S && S.orderOf ? S.orderOf(spellId) : null; }
+  function badge(oid, size) { var o = orderById(oid); if (!o) return ''; size = size || 34;
+    return '<svg class="mc-badge" viewBox="0 0 34 34" width="' + size + '" height="' + size + '" aria-hidden="true" focusable="false"><circle cx="17" cy="17" r="16" fill="' + esc(o.color) + '"/><circle cx="17" cy="17" r="16" fill="none" stroke="rgba(20,24,42,.35)"/>' +
+      (/^\s*</.test(o.glyph) ? '<g transform="translate(5 5) scale(1.2)" fill="#14182a" stroke="#14182a" stroke-linecap="round">' + o.glyph + '</g>'   // D's glyph: SVG markup on a 20 × 20 box (SPELLS.ORDERS, the duel's own)
+        : '<g transform="translate(7 7) scale(.8333)"><path d="' + esc(o.glyph) + '" fill="none" stroke="#14182a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g>') + '</svg>'; }   // the Order's glyph in dark ink on its colour: known without the colour
+  // an item read whole: what the caller gave, and the rest from SPELLS
+  function resolve(it) { if (typeof it === 'string') it = { id: it }; if (hasLeak(it)) throw new Error('MMCard: a key may never reach a card');
+    var S = SP(), sp = S && S.byId ? S.byId(it.id) : null, o = orderById(it.order || (sp && sp.order)), kind = S && S.kindOf ? S.kindOf(it.id) : null;
+    return { id: it.id, src: it, name: it.name || (S && S.name ? S.name(it.id) : it.id), order: o, kind: kind ? kind.name : null, size: sp ? sp.size : null,
+      card: it.card || (sp && sp.card) || { does: '', howTo: [] }, facts: Object.assign({ reach: sp ? sp.reach : null }, it.facts || {}), state: it.state || null, runes: sp ? sp.runes : [] }; }
+  function runeName(r) { try { return G.RUNES && G.RUNES.name ? G.RUNES.name(r) : r; } catch (e) { return r; } }
+  var FACTS = [['charge', 'Charge'], ['power', 'Power'], ['level', 'Level'], ['reach', '']];   // the numbers first, the reach in words last (it takes the second line on a phone)
+  function factsHTML(R) { return FACTS.filter(function (f) { var v = R.facts[f[0]]; return v != null && v !== ''; }).map(function (f) { var v = R.facts[f[0]];
+    return f[1] ? '<span class="mc-f mc-f-' + f[0] + '"><i>' + f[1] + '</i> <b>' + esc(v) + '</b></span>' : '<span class="mc-f mc-reach">' + esc(v) + '</span>'; }).join(''); }
+  function rowText(it) { var R = resolve(it); return R.name + (R.order ? ', the Order of ' + R.order.name : '') + '. ' + FACTS.filter(function (f) { var v = R.facts[f[0]]; return v != null && v !== ''; }).map(function (f) { return (f[1] ? f[1] + ' ' : 'Reach: ') + R.facts[f[0]]; }).join(', ') + '.'; }
+
+  /* one card: the row (a disclosure button inside a heading) and its body, built on first open */
+  function card(host, it, opt) {
+    opt = opt || {}; var R = resolve(it), id = 'mc' + (++uid), built = false, isOpen = false, drawn = [];
+    var el = document.createElement('section'); el.className = 'mc-card'; el.setAttribute('data-id', R.id); if (R.order) el.setAttribute('data-order', R.order.id);
+    if (R.order) el.style.setProperty('--mc-c', R.order.color);
+    var H = opt.heading || 'h3', fixed = opt.collapsible === false;
+    el.innerHTML = '<' + H + ' class="mc-h">' + (fixed ? '<span class="mc-row" id="' + id + 'h">' : '<button type="button" class="mc-row" id="' + id + 'h" aria-expanded="false" aria-controls="' + id + 'b">') +
+      badge(R.order && R.order.id) + '<span class="mc-main"><span class="mc-name">' + esc(R.name) + '</span><span class="mc-sr">, the Order of ' + esc(R.order ? R.order.name : '') + '. </span>' +
+      '<span class="mc-facts">' + factsHTML(R) + '</span></span>' + (R.state ? '<span class="mc-state">' + esc(R.state) + '</span>' : '') + (fixed ? '' : '<span class="mc-chev" aria-hidden="true"></span>') +
+      (fixed ? '</span>' : '</button>') + '</' + H + '><div class="mc-body" id="' + id + 'b" role="region" aria-labelledby="' + id + 'h" hidden></div>';
+    host.appendChild(el);
+    var btn = el.querySelector('.mc-row'), body = el.querySelector('.mc-body'), api;
+    function build() { if (built) return; built = true; var c = R.card || {}, steps = (c.howTo || []);
+      body.innerHTML = (c.does ? '<p class="mc-does">' + esc(c.does) + '</p>' : '') + '<div class="mc-grid"><figure class="mc-still mm-night"><div class="mc-pic"></div><figcaption class="mc-cap"></figcaption></figure>' +
+        '<div class="mc-how"><h4>How to cast it</h4><ol class="mc-steps">' + steps.map(function (h, i) { return '<li><span class="mc-n" aria-hidden="true">' + (i + 1) + '</span><div><p class="mc-act"><b>' + esc(h.action) + '</b>' + (h.rune ? ' <span class="mc-rune">' + esc(runeName(h.rune)) + ' · ' + esc(h.rune) + '</span>' : '') + '</p>' +
+          '<p class="mc-rule">' + esc(h.entry) + '</p><p class="mc-worked" hidden><span>Worked</span> <span class="mc-wv"></span></p></div></li>'; }).join('') + '</ol>' +
+        (c.proper ? '<p class="mc-proper"><b>A proper cast.</b> ' + esc(c.proper) + '</p>' : '') + (c.trap ? '<p class="mc-trap"><b>Watch for</b> ' + esc(c.trap) + '</p>' : '') + '</div></div>' +
+        '<dl class="mc-dl">' + [['Order', R.order ? R.order.name : ''], ['Kind', R.kind], ['Size', R.size ? R.size + ' spell' : ''], ['Charge', R.facts.charge], ['Power', R.facts.power], ['Reach', R.facts.reach], ['Level', R.facts.level]]
+          .filter(function (d) { return d[1] != null && d[1] !== ''; }).map(function (d) { return '<div><dt>' + d[0] + '</dt><dd>' + esc(d[1]) + '</dd></div>'; }).join('') + '</dl><div class="mc-acts"></div>';
+      still(); }
+    // the still: the end frame of the worked casting, drawn once (no animation), with its words as the figure's caption
+    function still() { var pic = body.querySelector('.mc-pic'), cap = body.querySelector('.mc-cap'), fig = body.querySelector('.mc-still'), s = R.src.still || (opt.still && opt.still(R.src));
+      if (typeof s === 'function') s = s(); if (!s) { fig.classList.add('mc-none'); pic.innerHTML = '<p class="mc-wait">The cast is drawn here when its worked casting is ready.</p>'; return; }
+      if (hasLeak(s)) throw new Error('MMCard: a key may never reach a card');
+      var words = [], parts = s.panels || [s];
+      if (s.svg) { pic.innerHTML = s.svg; words.push(s.label || ''); }
+      else { if (s.panels) pic.classList.add('mc-panels');
+        parts.forEach(function (p, i) { var cell = pic; if (s.panels) { cell = document.createElement('figure'); cell.className = 'mc-panel'; cell.innerHTML = '<figcaption>' + (i + 1) + (p.label ? ' · ' + esc(p.label) : '') + '</figcaption>'; pic.appendChild(cell); }
+          var surf = null; try { if (p.inst && G.MMInst) surf = G.MMInst.mount(cell, p.inst); else if (p.plan && G.MMPlan) surf = G.MMPlan.mount(cell, p.plan, { worked: true }); } catch (e) { surf = null; if (G.console) G.console.error(e); }
+          if (!surf) return; drawn.push(surf); surf.final(p.vals || {}, 'held'); var t = surf.castText ? surf.castText(p.vals || {}) : ''; if (t) words.push(t.replace(/\bYour /g, 'The ').replace(/\byour /g, 'the ')); }); }
+      cap.textContent = (s.caption || 'The cast, worked on its own numbers.') + (words.length ? ' ' + words.join(' ') : '');
+      pic.setAttribute('role', 'img'); pic.setAttribute('aria-label', 'The still of ' + R.name + ' cast. ' + words.join(' '));
+      (s.worked || []).forEach(function (w, i) { var li = body.querySelectorAll('.mc-steps > li')[i]; if (!li || !w) return; var p = li.querySelector('.mc-worked'); p.hidden = false; p.querySelector('.mc-wv').textContent = w; }); }
+    function open() { if (fixed || isOpen) { if (fixed && !built) { body.hidden = false; build(); } return; } isOpen = true; btn.setAttribute('aria-expanded', 'true'); el.classList.add('open'); body.hidden = false; build(); if (opt.onOpen) opt.onOpen(R.src, api); }
+    function close() { if (fixed || !isOpen) return; isOpen = false; btn.setAttribute('aria-expanded', 'false'); el.classList.remove('open'); body.hidden = true; if (opt.onClose) opt.onClose(R.src, api); }
+    if (!fixed) btn.addEventListener('click', function () { if (isOpen) close(); else { if (opt.beforeOpen) opt.beforeOpen(R.id); open(); } });
+    api = { el: el, id: R.id, get body() { return body; }, get acts() { build(); return body.querySelector('.mc-acts'); }, open: open, close: close, toggle: function () { if (isOpen) close(); else open(); }, isOpen: function () { return isOpen; },
+      rowText: function () { return rowText(R.src); }, destroy: function () { drawn.forEach(function (d) { if (d.destroy) d.destroy(); }); if (el.parentNode) el.parentNode.removeChild(el); } };
+    if (fixed || opt.open) open();
+    return api;
+  }
+
+  function list(host, items, opt) {
+    opt = opt || {}; var root = document.createElement('div'); root.className = 'mc-list'; if (opt.label) root.setAttribute('aria-label', opt.label); host.appendChild(root);
+    var cards = [], want = [].concat(opt.open || []);
+    function render(its) { cards.forEach(function (c) { c.destroy(); }); cards = (its || []).map(function (it) { var id = typeof it === 'string' ? it : it.id;
+      return card(root, it, { heading: opt.heading, still: opt.still, open: want.indexOf(id) >= 0, onOpen: opt.onOpen, onClose: opt.onClose,
+        beforeOpen: opt.single ? function (oid) { cards.forEach(function (c) { if (c.id !== oid && c.isOpen()) c.close(); }); } : null }); }); }
+    render(items);
+    // Up, Down, Home and End move between the rows (the accordion pattern); Enter and Space are the buttons' own
+    root.addEventListener('keydown', function (e) { var t = e.target; if (!t.classList || !t.classList.contains('mc-row')) return; var rows = [].slice.call(root.querySelectorAll('button.mc-row')), i = rows.indexOf(t), j = -1;
+      if (e.key === 'ArrowDown') j = Math.min(rows.length - 1, i + 1); else if (e.key === 'ArrowUp') j = Math.max(0, i - 1); else if (e.key === 'Home') j = 0; else if (e.key === 'End') j = rows.length - 1;
+      if (j >= 0) { e.preventDefault(); rows[j].focus(); } });
+    function by(id) { return cards.filter(function (c) { return c.id === id; })[0] || null; }
+    return { el: root, card: by, open: function (id) { var c = by(id); if (c) { if (opt.single) cards.forEach(function (o) { if (o !== c) o.close(); }); c.open(); } return c; }, close: function (id) { var c = by(id); if (c) c.close(); },
+      toggle: function (id) { var c = by(id); if (c) { if (c.isOpen()) c.close(); else this.open(id); } }, isOpen: function (id) { var c = by(id); return !!c && c.isOpen(); },
+      update: function (its) { want = cards.filter(function (c) { return c.isOpen(); }).map(function (c) { return c.id; }); render(its); }, rowText: function () { return cards.map(function (c) { return c.rowText(); }); },
+      destroy: function () { cards.forEach(function (c) { c.destroy(); }); if (root.parentNode) root.parentNode.removeChild(root); } };
+  }
+  function one(host, it, opt) { opt = opt || {}; var root = document.createElement('div'); root.className = 'mc-list mc-one'; host.appendChild(root);
+    var c = card(root, it, { heading: opt.heading, still: opt.still, open: opt.open !== false, collapsible: opt.collapsible, onOpen: opt.onOpen, onClose: opt.onClose });
+    var d = c.destroy; c.destroy = function () { d(); if (root.parentNode) root.parentNode.removeChild(root); }; c.el = root; return c; }
+
+  var api = { version: '1.0.0', list: list, one: one, badge: badge, order: order, orders: orders, rowText: rowText };
+  G.MMCard = api; if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
 /* --- mage: kit/stage.js --- */
@@ -271793,6 +272019,9 @@ var HTG = (function () {
     host.innerHTML = '<div class="htg-spellhead"><span class="mm-kicker">' + esc(N().session.movements.spell) + ' · ' + esc(SPELLS.name(sp.id)) + ' · full strength</span>' +
       '<div class="htg-lsn-tabs" role="tablist" aria-label="Learning the spell">' + STAGES.map(function (x, i) { return '<button type="button" role="tab" data-st="' + x[0] + '" aria-selected="' + (Ls.stage === x[0]) + '"><b>' + (i + 1) + '</b> ' + x[1] + '</button>'; }).join('') + '</div></div><div class="htg-lsn"></div>';
     var box = host.querySelector('.htg-lsn');
+    // POLICY §1j: the spell's card, collapsed, above the lesson; its still image avoids every number of the casting the student will get
+    if (typeof HCX !== 'undefined' && HCX.cardList) { var ch = document.createElement('div'); ch.className = 'htg-card'; host.insertBefore(ch, box);
+      var mine = MAGE_GENS.make(sp.id, 'full', it.seed), avoid = []; mine.parts.forEach(function (p) { p.boxes.forEach(function (b) { avoid.push(b.key); }); }); HCX.cardList(ch, [sp.id], R, { seed: it.seed + 11, avoid: avoid, noPractise: true, label: 'This spell’s card' }); }
     function go(stg) { Ls.stage = stg; host.querySelectorAll('[data-st]').forEach(function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-st') === stg)); }); box.innerHTML = '';
       if (stg === 'see') seeIt(box, sp, demo, canPlan, function () { go('build'); });
       else if (stg === 'build') buildIt(box, sp, it, R, demo, canPlan, function () { go('cast'); });
@@ -271932,19 +272161,39 @@ var HTG = (function () {
     '.htg-rh{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.htg-rh h3{margin:0 0 6px}.htg-nudge{color:var(--mm-held,#f2c46b);min-height:1em}',
     '.htg-choose{margin:0 0 10px}.htg-choose .htg-items{margin-top:4px}',
     '.htg-panels{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}.htg-panels-pic{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}.htg-panel{margin:0;border:1px solid var(--mm-night-line-2,rgba(170,190,235,.26));border-radius:12px;padding:8px;min-width:0;background:var(--mm-night-0,#070b14);transition:opacity .3s,border-color .3s}',
-    '.htg-panel figcaption{font-size:13px;margin:0 0 4px}.htg-panel figcaption small{color:var(--mm-night-ink-2,#a3aec6)}.htg-panel .mm-plan,.htg-panel .mm-inst{max-width:100%}.htg-panel svg{max-width:100%;height:auto}.htg-panel .mm-inst-html{overflow-x:auto}.htg-panel .in-table{font-size:13px}.htg-panel .mm-plan.mp-nl{overflow:visible;margin-bottom:14px}',
+    '.htg-panel figcaption{font-size:13px;margin:0 0 4px}.htg-panel figcaption small{color:var(--mm-night-ink-2,#a3aec6)}.htg-panel .mm-plan,.htg-panel .mm-inst{max-width:100%}.htg-panel svg{max-width:100%;height:auto}.htg-panel .mm-inst-html{overflow-x:auto}.htg-panel .in-table{font-size:12px;width:100%;table-layout:fixed}.htg-panel .in-table th,.htg-panel .in-table td{padding:4px 5px;overflow-wrap:anywhere;letter-spacing:0;text-transform:none}.htg-panel .mm-plan.mp-nl{overflow:visible;margin-bottom:14px}',
     '.htg-panels-pic .htg-panel{opacity:.55}.htg-panels-pic .htg-panel.lit{opacity:1;border-color:var(--mm-held,#f2c46b)}.htg-panels-see .htg-panel.on,.htg-panels-whole .htg-panel.on{border-color:var(--mm-held,#f2c46b)}.htg-panel.lent{opacity:.7}'
   ].join('\n');
   // the finished spell on a worked casting (other numbers than any the student is working), for the Codex card: the picture with
   // every part lit, and each How to cast row's worked result. Returns [{ h, worked }] in the card's order.
-  function cardPicture(host, id, seed) {
+  function cardPicture(host, id, seed, avoid) {
     var sp = SPELLS.byId(id); if (!sp || !sp.card || !MAGE_GENS.has(id, 'full')) return [];
-    var demo = MAGE_GENS.make(id, 'full', demoSeed(seed || 1)), steps = stepsOf(sp, demo), canPlan = uniform(demo) && typeof MMPlan !== 'undefined';
+    // the still image of the cast: a worked casting whose numbers are none of `avoid` (the values of any problem in front of the student)
+    var av = (avoid || []).map(function (v) { return JSON.stringify(v); }), demo = null;
+    for (var k = 0; k < 40 && !demo; k++) { var d0 = MAGE_GENS.make(id, 'full', demoSeed((seed || 1) + k)); if (!d0.parts.some(function (p) { return p.boxes.some(function (b) { return av.indexOf(JSON.stringify(b.key)) >= 0; }); })) demo = d0; }
+    demo = demo || MAGE_GENS.make(id, 'full', demoSeed(seed || 1));
+    var steps = stepsOf(sp, demo), canPlan = uniform(demo) && typeof MMPlan !== 'undefined';
     if (host) { if (canPlan && MMPlan.picture) { var pic = MMPlan.picture(host, { plan: wholePlan(demo, function () { return false; }, function () { return { from: 'held' }; }), vals: {}, parts: steps.map(function (x) { return { id: x.h.rune, label: x.h.action + ': ' + (makesWords(demo, x.part) || worded(x.part)) }; }) }); pic.set(steps.map(function (x) { return x.h.rune; })); }
       else panels(host, demo, steps, 'pic').set(steps.map(function (x) { return x.h.rune; })); }
     return steps.map(function (x) { return { h: x.h, prompt: x.part.prompt, worked: makesWords(demo, x.part) || worded(x.part) }; });
   }
-  return { view: view, CSS: CSS, cardPicture: cardPicture, _rh: { castOn: castOn, sittings: sittings }, _planOf: planOf, _partFor: function (T, s, seed) { var keep = SES; SES = SES || { spell: null }; var r = partFor(T, s, seed); SES = keep; return r; }, _record: record };
+  // B's spell card (MMCard, POLICY §1j): its still image of the cast, built from a demonstration casting whose numbers are none of `avoid`
+  // (the casting in front of the student). One plane: { plan, vals }; number lines or instruments: { panels }. worked: one per How to cast row.
+  function demoFor(id, seed, avoid) { var av = (avoid || []).map(function (v) { return JSON.stringify(v); });
+    for (var k = 0; k < 40; k++) { var d0 = MAGE_GENS.make(id, 'full', demoSeed((seed || 1) + k)); if (!d0.parts.some(function (p) { return p.boxes.some(function (b) { return av.indexOf(JSON.stringify(b.key)) >= 0; }); })) return d0; }
+    return MAGE_GENS.make(id, 'full', demoSeed(seed || 1)); }
+  function stillOf(id, seed, avoid) {
+    var sp = SPELLS.byId(id); if (!sp || !sp.card || !MAGE_GENS.has(id, 'full')) return null;
+    var demo = demoFor(id, seed, avoid), steps = stepsOf(sp, demo), byRune = {}; steps.forEach(function (x) { byRune[x.h.rune] = x; });
+    var worked = sp.card.howTo.map(function (h) { var x = h.rune && byRune[h.rune]; return x ? (makesWords(demo, x.part) || worded(x.part)) : ''; }), st;
+    if (uniform(demo)) { var vals = {}; demo.parts.forEach(function (p) { if (!noteOnly(p)) Object.assign(vals, demoVals(p)); });
+      st = { plan: wholePlan(demo, function (p) { return !noteOnly(p); }, function (p) { return noteOnly(p) ? { from: 'held' } : null; }), vals: vals }; }
+    else st = { panels: steps.map(function (x) { var p = x.part, inst = p.givens && p.givens.inst ? JSON.parse(JSON.stringify(p.givens.inst)) : null, pl = inst ? null : planOf(demo, p, null);
+      var o = { vals: demoVals(p), label: x.h.action + ' · ' + RUNES.name(x.h.rune) }; if (inst) o.inst = inst; else if (pl) o.plan = pl; else return null; return o; }).filter(Boolean) };
+    st.worked = worked; st.caption = 'The finished spell, worked on its own numbers.';
+    return st;
+  }
+  return { view: view, CSS: CSS, cardPicture: cardPicture, stillOf: stillOf, _rh: { castOn: castOn, sittings: sittings }, _planOf: planOf, _partFor: function (T, s, seed) { var keep = SES; SES = SES || { spell: null }; var r = partFor(T, s, seed); SES = keep; return r; }, _record: record };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = HTG;
 /* ===== HTG END ===== */
@@ -271984,7 +272233,8 @@ var HCX = (function () {
   function main(body, R) {
     body.innerHTML = strip(R) + '<h2>Your blobs and your aether</h2><div class="hmg-card">' + ribbon(R.codex && R.codex.course) + '</div>' +
       '<h2>Your spells</h2><div class="hcx-mine"></div><h2>Next to develop</h2><div class="hcx-next"></div><h2>Every spell, and its runes</h2><div class="hcx-webwrap"></div>' +
-      '<details class="hcx-list"><summary>Every spell as a list</summary><p class="hb-muted">All 45 spells, by what they do. Tap one for its card, its runes and the transmutation it needs.</p><div class="hcx-all"></div></details>';
+      '<h2>The spell cards</h2><p class="hb-muted">Every spell, by its Order: Lines, Measure, Proportion and Number, the four the Obscuratum’s orbs are attuned to. Open a card for the still image of the cast and how to cast it.</p><div class="hcx-cardhost"></div>' +
+      '<details class="hcx-list"><summary>Every spell by what it does</summary><div class="hcx-all"></div></details>';
     var lv = body.querySelector('.hcx-lv'), lb = HMG.levelBar(R); if (lb && typeof MMGauges !== 'undefined') { lv.innerHTML = MMGauges.lvbar(); MMGauges.setLevel(lv, lb); }
     var mine = SPELLS.LIST.filter(function (sp) { return ORDER.indexOf(des(R, sp.id)) >= 3; }).sort(function (a, b) { return ORDER.indexOf(des(R, b.id)) - ORDER.indexOf(des(R, a.id)); });
     var mh = body.querySelector('.hcx-mine');
@@ -271994,6 +272244,7 @@ var HCX = (function () {
     var nx = (R.codex && R.codex.next) || [];
     body.querySelector('.hcx-next').innerHTML = nx.length ? '<ul class="hmg-list">' + nx.map(function (id) { return '<li><a href="#codex/' + esc(id) + '"><b>' + esc(SPELLS.name(id)) + '</b></a>: ' + f1(R.codex.spells[id].trans.ready) + ' ready to transmute.</li>'; }).join('') + '</ul>' : '<p class="hb-muted">The spells with the most ready to transmute appear here once a spell is Practised.</p>';
     web(body.querySelector('.hcx-webwrap'), R);
+    var ordered = [].concat.apply([], SPELLS.ORDERS.map(function (o) { return o.spells; })); cardList(body.querySelector('.hcx-cardhost'), ordered, R, { seed: 3 });
     var by = {}; SPELLS.LIST.forEach(function (sp) { (by[sp.verb] = by[sp.verb] || []).push(sp); });
     body.querySelector('.hcx-all').innerHTML = SPELLS.VERBS.filter(function (v) { return by[v]; }).map(function (v) {
       return '<section class="hcx-verb"><h3>' + esc(N() ? N().verbs[v] : v) + '</h3><div>' + by[v].map(function (sp) { var d = des(R, sp.id), open = R.open.spells.indexOf(sp.id) >= 0;
@@ -272092,6 +272343,43 @@ var HCX = (function () {
     if (sp.size !== 'lesser') rows.push([desName('crowned') + ': held at crown strength, first try', at >= 5 ? 'done' : '', at >= 5]);
     return rows.map(function (x) { return '<li>' + (x[2] ? '✓ ' : '○ ') + esc(x[0]) + ' <span class="hmg-note">' + esc(x[1]) + '</span></li>'; });
   }
+  /* ---- POLICY §1j: the spell card's model, for B's one card component (Codex, Training Ground, the Obscuratum's drawer).
+     Collapsed: name, Order (colour and symbol), Charge cost, power, reach, level. Expanded: the still image of the cast (a worked
+     casting with none of the student's numbers) and How to cast with the worked numbers beside each rule. */
+  var LEVEL_OF_GROUP = { ch12: 3, ch34: 5, ch5: 7, ch67: 11, ch8: 13 };   // the rank by which every rune of the spell has been taught
+  function cardData(id, R, opts) {
+    var sp = SPELLS.byId(id); if (!sp) return null; opts = opts || {};
+    var cat = HMG.cat(), G = ['ch12', 'ch34', 'ch5', 'ch67', 'ch8'], g = G[Math.max.apply(null, sp.runes.map(function (T) { return G.indexOf(cat.territories[T].group); }))], L = LEVEL_OF_GROUP[g];
+    var o = SPELLS.orderOf(id), pw = typeof POWER !== 'undefined' ? POWER.table(sp, sp.size === 'lesser') : null, d = R ? des(R, id) : 'unseen';
+    var wk = typeof HTG !== 'undefined' && HTG.cardPicture ? HTG.cardPicture(null, id, opts.seed || 1, opts.avoid) : [], byRune = {}; wk.forEach(function (x) { byRune[x.h.rune] = x; });
+    return { id: id, name: SPELLS.name(id), order: o ? { id: o.id, name: o.name, color: o.color, glyph: o.glyph } : null, kind: SPELLS.kindOf(id) ? SPELLS.kindOf(id).name : null, verb: sp.verb, size: sp.size, reach: sp.reach,
+      level: { L: L, title: N() ? N().levels.titles[L] : String(L) }, power: pw, charge: opts.charge === undefined ? null : opts.charge, designation: d, designationName: desName(d),
+      runes: sp.runes.map(function (T) { return { id: T, name: RUNES.name(T), fire: R ? FIRE.headline(R.fires[T]) : -1 }; }), does: sp.card ? sp.card.does : sp.form,
+      howTo: sp.card ? sp.card.howTo.map(function (h) { var x = h.rune && byRune[h.rune]; return { action: h.action, rune: h.rune, runeName: h.rune ? RUNES.name(h.rune) : null, rule: h.entry, worked: x ? x.worked : null }; }) : [],
+      proper: sp.card ? sp.card.proper : null, trap: sp.card ? sp.card.trap : null,
+      still: function (host) { if (typeof HTG !== 'undefined' && HTG.cardPicture) HTG.cardPicture(host, id, opts.seed || 1, opts.avoid); } };
+  }
+  // the Order's mark: its symbol drawn dark on its colour, exactly as the duel draws it, so it reads without colour
+  function orderMark(o) { return o ? '<svg class="hcx-om" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="' + o.color + '"/><g fill="#0b1020" stroke="#0b1020" stroke-linecap="round">' + o.glyph + '</g></svg>' : ''; }   // as E draws it (src/cards.js icon)
+  // the cards as collapsed rows that open: B's MMCard when it is on the page (always in the hub); this list of <details> otherwise
+  function cardList(host, ids, R, opts) {
+    opts = opts || {};
+    if (typeof MMCard !== 'undefined' && MMCard.list) {   // B's one card component (POLICY §1j): D supplies the facts, the still and the buttons
+      var items = ids.filter(function (id) { return SPELLS.byId(id); }).map(function (id) { var c = cardData(id, R, opts);
+        return { id: id, facts: { power: c.power ? c.power.full : null, level: c.level.L + ' · ' + c.level.title, reach: c.reach, charge: opts.charge == null ? null : opts.charge }, state: c.designationName,
+          still: function () { return typeof HTG !== 'undefined' && HTG.stillOf ? HTG.stillOf(id, opts.seed || 1, opts.avoid) : null; } }; });
+      return MMCard.list(host, items, { single: !!opts.single, open: opts.open, label: opts.label || 'Spell cards',
+        onOpen: function (item, card) { var acts = card && card.acts; if (!acts || acts.getAttribute('data-filled')) return; acts.setAttribute('data-filled', '1'); var sp = SPELLS.byId(item.id), home = TG.home(sp, { SPELLS: SPELLS, RUNES: RUNES }), open = R && R.open.spells.indexOf(item.id) >= 0;
+          acts.innerHTML = (opts.noPractise ? '' : open ? '<a class="hmg-btn primary" href="#tg/' + home + '/' + esc(item.id) + '">Practise it</a> ' : '<span class="hmg-note">' + esc((R && R.open.waits && R.open.waits[item.id]) || 'Not open yet.') + '</span> ') + '<a class="hmg-btn" href="#codex/' + esc(item.id) + '">Its card</a>'; } });
+    }
+    var cards = ids.map(function (id) { return cardData(id, R, opts); }).filter(Boolean);
+    host.innerHTML = '<div class="hcx-cards">' + cards.map(function (c) {
+      return '<details class="hcx-card" data-id="' + esc(c.id) + '" style="--oc:' + (c.order ? c.order.color : '#a3aec6') + '"><summary><span class="hcx-cs">' + orderMark(c.order) + '<b>' + esc(c.name) + '</b><small>' + esc(c.order ? 'Order of ' + c.order.name : '') + (c.kind && (!c.order || c.kind.toLowerCase() !== c.order.name.toLowerCase()) ? ' · ' + esc(c.kind) : '') + '</small></span>' +
+        '<span class="hcx-ck"><span>' + esc(c.reach || '') + '</span><span>Power ' + (c.power ? c.power.full : '–') + '</span><span>Level ' + c.level.L + '</span>' + (c.charge != null ? '<span>Charge ' + c.charge + '</span>' : '') + '<span class="hmg-chip ' + c.designation + '">' + esc(c.designationName) + '</span></span></summary>' +
+        '<div class="hcx-cbody"><div class="hcx-still"></div><p>' + esc(c.does) + '</p><ol class="hcx-how">' + c.howTo.map(function (h) { return '<li><b>' + esc(h.action) + (h.runeName ? ' · ' + esc(h.runeName) : '') + '</b>' + esc(h.rule) + (h.worked ? '<span class="hcx-worked"><i>Worked:</i> ' + esc(h.worked) + '</span>' : '') + '</li>'; }).join('') + '</ol><p><a href="#codex/' + esc(c.id) + '">The whole card</a></p></div></details>'; }).join('') + '</div>';
+    host.querySelectorAll('details.hcx-card').forEach(function (d) { d.addEventListener('toggle', function () { var st = d.querySelector('.hcx-still'); if (d.open && !st.childNodes.length) { var c = cards.filter(function (x) { return x.id === d.getAttribute('data-id'); })[0]; try { c.still(st); } catch (e) { st.textContent = ''; } } }); });
+    return { el: host };
+  }
   function view(body, R, parts) { if (parts[0]) return spellView(body, R, parts[0]); main(body, R); }
   var CSS = [
     '.hcx-strip{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 16px}@media (max-width:760px){.hcx-strip{grid-template-columns:1fr}}',
@@ -272106,6 +272394,10 @@ var HCX = (function () {
     '.hcx-how{padding-left:0;list-style:none;counter-reset:s}.hcx-how li{position:relative;padding:8px 10px 8px 42px;margin:0 0 6px;border-radius:12px;background:var(--mm-surface-2,rgba(127,127,127,.08));font-size:14px}.hcx-how li::before{counter-increment:s;content:counter(s);position:absolute;left:10px;top:8px;width:24px;height:24px;border-radius:50%;background:var(--mm-ink,#222);color:var(--mm-bg,#fff);font:700 13px/24px inherit;text-align:center}.hcx-how li b{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;opacity:.8}',
     '.hcx-proper{padding:10px 12px;border-radius:12px;border:1px solid var(--mm-held,#f2c46b);font-size:14px}',
     '.hcx-stg{padding:10px}',
+    '.hcx-cards{display:grid;gap:6px}.hcx-card{border:1px solid var(--mm-line,rgba(127,127,127,.25));border-left:4px solid var(--oc);border-radius:12px;background:var(--mm-surface,transparent)}',
+    '.hcx-card summary{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;justify-content:space-between;padding:8px 12px;min-height:44px;cursor:pointer;list-style:none}.hcx-card summary::-webkit-details-marker{display:none}',
+    '.hcx-cs{display:flex;align-items:center;gap:8px}.hcx-cs b{font-size:15.5px}.hcx-cs small{font-size:12px;opacity:.75}.hcx-om{width:22px;height:22px;flex:none}',
+    '.hcx-ck{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;opacity:.9}.hcx-cbody{padding:4px 12px 12px}.hcx-still{max-width:560px}.hcx-card summary:focus-visible{outline:3px solid var(--mm-focus,#3b82f6);outline-offset:2px;border-radius:10px}',
     '.hcx-webcard{padding:10px;background:var(--mm-night-0,#070b14);color:var(--mm-night-ink,#e9edf7);border-color:var(--mm-night-line,rgba(170,190,235,.14))}.hcx-webcard a{color:inherit}.hcx-webcard .hmg-note{color:var(--mm-night-ink-2,#a3aec6)}.hcx-webbar{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:4px 4px 8px}.hcx-seg{display:inline-flex;flex-wrap:wrap;gap:4px}.hcx-seg button{font:600 13px inherit;min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--mm-night-line-2,rgba(170,190,235,.26));background:transparent;color:inherit;cursor:pointer}.hcx-seg button[aria-pressed=true]{border-color:var(--mm-held,#f2c46b);box-shadow:0 0 0 1px var(--mm-held,#f2c46b) inset}',
     '.hcx-webgrid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px;align-items:start}@media (max-width:900px){.hcx-webgrid{grid-template-columns:minmax(0,1fr)}}.hcx-webhost{min-width:0}',
     'svg.hcx-web{display:block;width:100%;height:auto}.hcx-web .grp{font:600 12px var(--mm-ui,Inter,sans-serif);fill:var(--mm-night-ink-2,#a3aec6);text-transform:capitalize}.hcx-web .lab{font:500 10.5px var(--mm-ui,Inter,sans-serif);fill:var(--mm-night-ink,#e9edf7)}.hcx-web [data-tall] .lab{display:none}',
@@ -272114,7 +272406,7 @@ var HCX = (function () {
     '.hcx-list{margin-top:10px}.hcx-list summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}',
     '.hcx-pic{margin:8px 0;max-width:460px}.hcx-pic{max-width:640px}.hcx-pic .htg-panels{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}.hcx-worked{display:block;margin-top:4px;font-size:13px;color:var(--mm-held-ink,#b07a14)}.hmg-night .hcx-worked{color:var(--mm-held,#f2c46b)}'
   ].join('\n');
-  return { view: view, CSS: CSS };
+  return { view: view, CSS: CSS, cardData: cardData, cardList: cardList };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = HCX;
 /* ===== HCX END ===== */
