@@ -48984,6 +48984,42 @@ var LMS = (function () {
     return lst && typeof n.entry === 'number' ? lst[n.entry] || null : null;
   }
 
+  // ------------------------------------------------------------------ A TEACHER'S EVALUATION (mm7-eval-v1, written by the Teacher Dashboard)
+  // The raw record is never changed: the evaluation is a separate key, read here on top of it, so it can be revised or removed.
+  //   items[hid] = { credit?: 0..1 (the question as a whole: an exam's points and the default for every skill),
+  //                  out?: true (thrown out: no points, and none of its default evidence),
+  //                  skills?: [{ id, credit?: 0..1 (null = the question's credit), w?: weight multiplier (default 1) }] (replaces
+  //                  the question's own skills: the evaluator's choice of what it is evidence for; on a thrown-out question it is
+  //                  the only evidence it gives), note, at, by }
+  //   hid = the History id of the answer ('x:<exam>:<attempt>:<node>', 'p:<app>-v1:<event>', 'r:<review>:<event>', 'o:…', 'd:…', 'm:…')
+  // An observation keeps one credit for the question (exam points, the exam anchor, the item prediction); per-skill credit and
+  // weight ride along as o.sc / o.sw and are read where the evidence and memory of each skill are updated.
+  var EVAL_KEY = 'mm7-eval-v1';
+  function hidOf(o, id) { try { Object.defineProperty(o, 'hid', { value: id, enumerable: false, writable: true, configurable: true }); } catch (e) { o.hid = id; } }
+  function applyEval(obs, ev, cat) {
+    var items = ev && ev.v === 1 && ev.items && typeof ev.items === 'object' ? ev.items : null;
+    if (!items) return obs;
+    obs.forEach(function (o) {
+      var it = o && o.hid ? items[o.hid] : null;
+      if (!it || (o.kind !== 'answer' && o.kind !== 'trial')) return;
+      o.evaluated = true; o.raw = { credit: o.credit, skills: o.skills, ok: o.ok, tag: o.tag };
+      if (typeof it.credit === 'number' && isFinite(it.credit)) { o.credit = clamp(it.credit, 0, 1); o.ok = o.credit >= K.OK_RECALL; if (o.ok) o.tag = null; }
+      var list = Array.isArray(it.skills) ? it.skills.filter(function (x) { return x && x.id && (!cat || !cat.skills || cat.skills[x.id]); }) : null;
+      if (list) {
+        var sc = {}, sw = {}, ids = [], seen = {}, sum = 0;
+        list.forEach(function (x) {
+          if (seen[x.id]) return; seen[x.id] = 1; ids.push(x.id);
+          var c = typeof x.credit === 'number' && isFinite(x.credit) ? clamp(x.credit, 0, 1) : null, w = typeof x.w === 'number' && isFinite(x.w) ? Math.max(0, x.w) : 1;
+          if (c !== null) sc[x.id] = c; if (w !== 1) sw[x.id] = w; sum += c === null ? o.credit : c;
+        });
+        o.skills = ids; o.sc = Object.keys(sc).length ? sc : null; o.sw = Object.keys(sw).length ? sw : null;
+        if (it.out && ids.length && typeof it.credit !== 'number') { o.credit = sum / ids.length; o.ok = o.credit >= K.OK_RECALL; }
+      }
+      if (it.out) { o.out = true; if (!list) o.skills = []; }
+    });
+    return obs;
+  }
+
   function collect(getItem, cat, hub) {
     var obs = [];
     // --- chapter Paths: answers, and completed levels (from the progress store)
@@ -48999,7 +49035,7 @@ var LMS = (function () {
         if (e.type === 'offline') { doneAt[key] = e.t; return; }
         if (e.type !== 'answer' || !L) return;
         if (e.mst) doneAt[key] = e.t;
-        obs.push({ t: num(e.t, 0), src: 'path', kind: 'answer', app: c.appId, key: key, level: key, skills: L.skills, diff: L.level, ok: !!e.ok, credit: e.ok ? 1 : 0, ms: num(e.dt, 0), est: null, help: !!e.help, tag: null, w: 1, mst: !!e.mst });
+        obs.push({ t: num(e.t, 0), hid: 'p:' + c.appId + '-v1:' + (e.id !== undefined ? e.id : e.t), src: 'path', kind: 'answer', app: c.appId, key: key, level: key, skills: L.skills, diff: L.level, ok: !!e.ok, credit: e.ok ? 1 : 0, ms: num(e.dt, 0), est: null, help: !!e.help, tag: null, w: 1, mst: !!e.mst });
       });
       var lv = P && P.lv ? P.lv : {};
       Object.keys(lv).forEach(function (k) {
@@ -49015,17 +49051,17 @@ var LMS = (function () {
         if (!e) return;
         if (e.type === 'answer') {
           var es = entrySkills(cat, e.gid, e.terr), credit = e.credit !== undefined && e.credit !== null ? e.credit : e.ok ? 1 : 0;
-          obs.push({ t: num(e.t, 0), src: 'review', kind: 'answer', app: g.review, key: e.gid || e.terr, entry: e.gid || null, terr: e.terr || es.terr, tier: num(e.tier, es.tier),
+          obs.push({ t: num(e.t, 0), hid: 'r:' + g.review + ':' + e.id, src: 'review', kind: 'answer', app: g.review, key: e.gid || e.terr, entry: e.gid || null, terr: e.terr || es.terr, tier: num(e.tier, es.tier),
             skills: es.skills, diff: num(e.tier, num(es.tier, 1)), ok: credit >= K.OK_RECALL, credit: credit, ms: num(e.ms, 0), est: num(e.est, null), help: !!e.help, tag: e.ok ? null : e.tag || null, w: es.w, group: g.id });
         } else if (e.type === 'model') {
           var em = entrySkills(cat, e.gid, e.terr), cm = e.credit !== undefined && e.credit !== null ? e.credit : e.ok ? 1 : 0;
-          obs.push({ t: num(e.t, 0), src: 'review', kind: 'answer', app: g.review, key: 'model:' + (e.gid || ''), entry: e.gid || null, terr: e.terr || em.terr, tier: em.tier,
+          obs.push({ t: num(e.t, 0), hid: 'r:' + g.review + ':' + e.id, src: 'review', kind: 'answer', app: g.review, key: 'model:' + (e.gid || ''), entry: e.gid || null, terr: e.terr || em.terr, tier: em.tier,
             skills: em.skills, diff: num(em.tier, 2), ok: cm >= K.OK_RECALL, credit: cm, ms: 0, help: false, tag: e.ok ? null : e.tag || null, w: em.w * K.W_MODEL, group: g.id });
         } else if (e.type === 'trial') {
           var r = roundOf(cat, e.round);
           if (!r || !r.skills.length) return;
           var acc = num(e.acc, e.att ? (e.correct || 0) / e.att : 0);
-          obs.push({ t: num(e.t, 0), src: 'review', kind: 'trial', app: g.review, key: 'trial:' + e.round, round: e.round, terr: r.terr, skills: r.skills, diff: K.D_TRIAL,
+          obs.push({ t: num(e.t, 0), hid: 'r:' + g.review + ':' + e.id, src: 'review', kind: 'trial', app: g.review, key: 'trial:' + e.round, round: e.round, terr: r.terr, skills: r.skills, diff: K.D_TRIAL,
             ok: acc >= K.OK_RECALL, credit: acc, ms: num(e.secs, 75) * 1000, help: false, tag: null, tags: e.tags || null, w: K.W_TRIAL, group: g.id });
         }
       });
@@ -49038,7 +49074,7 @@ var LMS = (function () {
           var id = examNodeEntry(cat, n), es = entrySkills(cat, id, n.terr), an = n.ans;
           var credit = an.skipped ? 0 : num(an.credit, an.ok ? 1 : 0);
           var t = Math.max(created, sub - Math.max(0, el - num(an.at, el)));
-          obs.push({ t: t, src: 'exam', kind: 'answer', app: g.exam, key: (a.id || 'x') + ':' + n.id, entry: id, terr: n.terr, tier: n.tier, role: n.role, attempt: a.id || String(sub), group: g.id,
+          obs.push({ t: t, hid: 'x:' + g.exam + ':' + a.id + ':' + n.id, src: 'exam', kind: 'answer', app: g.exam, key: (a.id || 'x') + ':' + n.id, entry: id, terr: n.terr, tier: n.tier, role: n.role, attempt: a.id || String(sub), group: g.id,
             skills: es.skills, diff: num(n.tier, 1), ok: credit >= K.OK_RECALL, credit: credit, ms: num(an.ms, 0), est: n.meta ? num(n.meta.est, null) : null, help: false,
             tag: credit >= K.OK_RECALL ? null : an.skipped ? 'skipped' : an.tag || null, skipped: !!an.skipped, w: es.w * K.W_EXAM, submittedAt: sub });   // an exam answer is unaided and adaptive: W_EXAM x the weight
         });
@@ -49048,10 +49084,10 @@ var LMS = (function () {
     // --- the hub's own onramp answers
     var ss = hub && hub.onramp && hub.onramp.sessions || [];
     ss.forEach(function (s) {
-      (s.answers || []).forEach(function (a) {
+      (s.answers || []).forEach(function (a, ai) {
         if (!a || !a.skills || !a.skills.length) return;
         var credit = a.credit !== undefined && a.credit !== null ? a.credit : a.ok ? 1 : 0;
-        obs.push({ t: num(a.t, 0), src: 'onramp', kind: 'answer', app: 'mm7-hub-v1', key: a.specId || '', session: s.id, skills: a.skills, diff: num(a.diff, 1), ok: credit >= K.OK_RECALL, credit: credit,
+        obs.push({ t: num(a.t, 0), hid: 'o:' + s.id + ':' + ai, src: 'onramp', kind: 'answer', app: 'mm7-hub-v1', key: a.specId || '', session: s.id, skills: a.skills, diff: num(a.diff, 1), ok: credit >= K.OK_RECALL, credit: credit,
           ms: num(a.ms, 0), help: !!a.help, tag: credit >= K.OK_RECALL ? null : a.tag || null, terr: a.terr || null, entry: a.ref && a.ref.type === 'entry' ? a.ref.id : null,
           level: a.ref && a.ref.type === 'level' ? lvKey(a.ref.ch, a.ref.key) : null, hyp: a.hypId || null, w: 1 });
       });
@@ -49060,17 +49096,20 @@ var LMS = (function () {
     // Superlative problems are bank entries at their own tier with the challenge weight.
     var ds = dojoSessions(getItem, hub);
     ds.forEach(function (s) {
-      (s.answers || []).forEach(function (a) {
+      (s.answers || []).forEach(function (a, ai) {
         if (!a || !a.skills || !a.skills.length) return;
         var sk = a.skills.filter(function (x) { return !cat || !cat.skills || cat.skills[x]; }); if (!sk.length) return;
         var credit = a.credit !== undefined && a.credit !== null ? a.credit : a.ok ? 1 : 0, ok = credit >= K.OK_RECALL, w = 1;
         if (s.mode === 'sup') w = ok ? Math.min(K.SUP_MAX, 1 + K.SUP_STEP * (sk.length - 1)) : K.SUP_MISS / Math.sqrt(sk.length);
-        obs.push({ t: num(a.t, 0), src: 'dojo', kind: 'answer', app: 'mm7-hub-v1', key: a.move || a.entry || '', session: s.id, mode: s.mode || 'roll', skills: sk, diff: num(a.diff, K.D_QUICK), ok: ok, credit: credit,
+        obs.push({ t: num(a.t, 0), hid: 'd:' + s.id + ':' + ai, src: 'dojo', kind: 'answer', app: 'mm7-hub-v1', key: a.move || a.entry || '', session: s.id, mode: s.mode || 'roll', skills: sk, diff: num(a.diff, K.D_QUICK), ok: ok, credit: credit,
           ms: num(a.ms, 0), help: !!a.help, tag: ok ? null : a.tag || null, terr: a.terr || null, entry: a.entry || null, level: null, hyp: null, w: w });
       });
     });
     /* MAGE-HOOK:obs-src */ var MO = typeof MAGE_OBS === 'function' ? MAGE_OBS : null;   // mage/lms_bridge.js: Math Mage answers as ordinary observations
-    if (MO) MO(getItem, cat, hub).forEach(function (o) { if (o && o.t) obs.push(o); });
+    if (MO) MO(getItem, cat, hub).forEach(function (o) { if (o && o.t) { if (!o.hid && o.key) hidOf(o, 'm:' + o.key + (o.kind === 'again' ? ':again' : '')); obs.push(o); } });
+    // the History id rides along unseen (not enumerable), so contracts, hashes and exports of observations are as before
+    obs.forEach(function (o) { if (o && Object.prototype.propertyIsEnumerable.call(o, 'hid')) hidOf(o, o.hid); });
+    applyEval(obs, get(getItem, EVAL_KEY), cat);   // a teacher's evaluation (the Teacher Dashboard), when the record holds one
     // total order: answers stamped the same millisecond must not depend on which record was read
     // first, so a model rebuilt from an export matches the one it came from
     function cs(a, b) { return a < b ? -1 : a > b ? 1 : 0; }
@@ -49212,7 +49251,7 @@ var LMS = (function () {
   }
   var fitCache = { key: null, val: null };
   function fitK(obs, cat) {
-    var ck = [K.IMP_W, K.S_MASTERED, K.K_PRIOR_SD, K.IMP_W_PRIOR_SD, K.KGRID.length].join(',') + '|' + (obs.length ? obs.length + '|' + obs[0].t + '|' + obs[obs.length - 1].t + '|' + obs.reduce(function (a, o) { return a + (o.credit || 0) * (o.t % 997); }, 0) : '0');
+    var ck = [K.IMP_W, K.S_MASTERED, K.K_PRIOR_SD, K.IMP_W_PRIOR_SD, K.KGRID.length].join(',') + '|' + (obs.length ? obs.length + '|' + obs[0].t + '|' + obs[obs.length - 1].t + '|' + obs.reduce(function (a, o) { var x = (o.credit || 0) * (o.t % 997) + (o.skills ? o.skills.length : 0) * (o.t % 991); if (o.sc) for (var q in o.sc) x += o.sc[q] * (o.t % 983); return a + x; }, 0) : '0');
     if (fitCache.key === ck && fitCache.cat === cat) return fitCache.val;
     var v = fitKRaw(obs, cat); fitCache = { key: ck, cat: cat, val: v }; return v;
   }
@@ -49222,7 +49261,7 @@ var LMS = (function () {
     for (i = 0; i < obs.length; i++) {
       var o = obs[i]; if (!isEvidence(o)) continue;
       var c = clamp(num(o.credit, o.ok ? 1 : 0), 0, 1), kind = o.kind === 'trial' ? 1 : 0;
-      for (j = 0; j < o.skills.length; j++) push(o.skills[j], o.t, o.diff, c, kind, o.mst ? 1 : 0);
+      for (j = 0; j < o.skills.length; j++) push(o.skills[j], o.t, o.diff, o.sc && o.sc[o.skills[j]] !== undefined ? o.sc[o.skills[j]] : c, kind, o.mst ? 1 : 0);
       var imp = impliedOf(cat, o);
       if (imp) for (j = 0; j < imp.length; j++) {
         if (o.skills.indexOf(imp[j]) >= 0) continue;
@@ -49322,16 +49361,20 @@ var LMS = (function () {
   function applyObs(states, o, k, t0, w, cat, candT, hist, c, ce, base, g) {
     if (c === undefined) { var ow = obsWeights(o, t0); c = ow.c; ce = ow.ce; base = ow.base; g = ow.g; }
     var opts = { hist: hist };
+    var c0 = c, ce0 = ce, base0 = base;
     for (var j = 0; j < o.skills.length; j++) {
       var sid = o.skills[j], m = states[sid] || (states[sid] = newSkill());
+      // a teacher's evaluation can give one skill its own credit or weight (applyEval: o.sc, o.sw)
+      c = o.sc && o.sc[sid] !== undefined ? o.sc[sid] : c0; ce = c === c0 ? ce0 : (o.help ? c * K.HELP_CREDIT : c); base = o.sw && o.sw[sid] !== undefined ? base0 * o.sw[sid] : base0;
       m.n++; if (c >= K.OK_RECALL) { m.nOK++; m.succT.push(o.t); m.succD.push(o.diff); if (m.succT.length > 80) { m.succT.splice(0, 40); m.succD.splice(0, 40); } }
       m.A += base * ce * g; m.B += base * (1 - ce) * g; m.sw += base; m.swd += base * o.diff;
       if (o.diff < K.EASY_D) { m.Ae = (m.Ae || 0) + base * ce * g; m.Be = (m.Be || 0) + base * (1 - ce) * g; }   // the easy-number share of the evidence (mass cap)
       if (o.diff >= 2) { m.A2 += base * ce * g; m.B2 += base * (1 - ce) * g; }   /* MAGE-HOOK:aether-replay: the full-strength share (refined mass) */
       memStep(m, o.t, o.diff, c, k, o.kind === 'trial', o.mst);
       m.lastSeen = o.t;
-      if (opts.hist) { (m.hist || (m.hist = [])).push({ t: o.t, kind: o.kind, ok: c >= K.OK_RECALL, credit: c, diff: o.diff, src: o.src, key: o.key, mst: o.mst ? 1 : 0 }); if (m.hist.length > 300) m.hist.shift(); }
+      if (opts.hist) { (m.hist || (m.hist = [])).push({ t: o.t, kind: o.kind, ok: c >= K.OK_RECALL, credit: c, diff: o.diff, src: o.src, key: o.key, mst: o.mst ? 1 : 0, hid: o.hid || null, ev: o.evaluated ? 1 : 0 }); if (m.hist.length > 300) m.hist.shift(); }
     }
+    c = c0;
     var imp = impliedOf(cat, o);
     if (imp) for (var ii = 0; ii < imp.length; ii++) {
       if (o.skills.indexOf(imp[ii]) >= 0) continue;
@@ -49502,8 +49545,12 @@ var LMS = (function () {
       if (!out[a.group] || a.submittedAt > out[a.group].submittedAt) out[a.group] = a;
     });
     Object.keys(out).forEach(function (g) {
-      var a = out[g], lanes = {}, core = 0, stretch = 0;
+      var a = out[g], lanes = {}, core = 0, stretch = 0, outCore = 0, outStretch = 0, nOut = 0;
       a.nodes.forEach(function (n) {
+        if (n.out) {   // thrown out by the teacher: it earns nothing and its value leaves the maximum
+          nOut++; if (n.role === 'first' || n.role === 'second') { var vx = n.tier * (n.role === 'second' ? 0.5 : 1); if (n.tier <= 2) outCore += vx; else outStretch += vx; }
+          return;
+        }
         var L = lanes[n.terr] || (lanes[n.terr] = { terr: n.terr, reach: 0, tags: {}, missed: [], probe: null, summit: null, answered: 0 });
         L.answered++;
         var c = n.credit, f = c >= 0.75 ? 1 : c >= 0.5 ? 0.5 : 0;
@@ -49517,8 +49564,9 @@ var LMS = (function () {
         if (!n.ok) { if (n.tag) L.tags[n.tag] = (L.tags[n.tag] || 0) + 1; if (n.entry) L.missed.push(n.entry); }
       });
       var nl = Object.keys(cat.territories).filter(function (t) { return cat.territories[t].group === g; }).length || Object.keys(lanes).length;
-      out[g] = { group: g, attemptId: a.id, submittedAt: a.submittedAt, lanes: lanes, corePts: core, coreMax: 3 * nl, stretchPts: stretch, stretchMax: 7 * nl,
-        core: core / (3 * nl), stretch: stretch / (7 * nl), answered: a.nodes.length };
+      var cMax = Math.max(core, 3 * nl - outCore), sMax = Math.max(stretch, 7 * nl - outStretch);
+      out[g] = { group: g, attemptId: a.id, submittedAt: a.submittedAt, lanes: lanes, corePts: core, coreMax: cMax, stretchPts: stretch, stretchMax: sMax,
+        core: cMax ? core / cMax : 0, stretch: sMax ? stretch / sMax : 0, answered: a.nodes.length - nOut, thrownOut: nOut };
     });
     return out;
   }
@@ -50253,7 +50301,7 @@ var LMS = (function () {
     // extras (documented in API.md "Changes")
     // internals for hub/lms_forecast.js (the simulator steps the same states with the same rules)
     _x: { K: K, DAY: DAY, replay: replay, pOf: pOf, examSummaries: examSummaries, fitK: fitK, applyObs: applyObs, evalSkill: evalSkill, pSkill: pSkill, pCombine: pCombine, statusOf: statusOf, newSkill: newSkill, aggregate: aggregate, levelKeys: levelKeys, sig: sig, logit: logit, clamp: clamp, dayKey: dayKey, median: median, hash: hash },
-    massOf: massOf, massRaw: massRaw, obsWeights: obsWeights, dojoSessions: dojoSessions, DOJO_PREFIX: DOJO_PREFIX, predict: predict, easier: easier, memoryTrace: memoryTrace, implied: function (cat, ref) { return impliedOf(cat, ref.type === 'level' ? { kind: 'answer', credit: 1, level: lvKey(ref.ch, ref.key) } : { kind: 'answer', credit: 1, entry: ref.id }) || []; }, dayKey: dayKey, useCatalog: function (cat) { api._cat = cat; return api; }, _cat: null
+    EVAL_KEY: EVAL_KEY, applyEval: applyEval, massOf: massOf, massRaw: massRaw, obsWeights: obsWeights, dojoSessions: dojoSessions, DOJO_PREFIX: DOJO_PREFIX, predict: predict, easier: easier, memoryTrace: memoryTrace, implied: function (cat, ref) { return impliedOf(cat, ref.type === 'level' ? { kind: 'answer', credit: 1, level: lvKey(ref.ch, ref.key) } : { kind: 'answer', credit: 1, entry: ref.id }) || []; }, dayKey: dayKey, useCatalog: function (cat) { api._cat = cat; return api; }, _cat: null
   };
   return api;
 })();
@@ -267561,6 +267609,42 @@ var LMS = (function () {
     return lst && typeof n.entry === 'number' ? lst[n.entry] || null : null;
   }
 
+  // ------------------------------------------------------------------ A TEACHER'S EVALUATION (mm7-eval-v1, written by the Teacher Dashboard)
+  // The raw record is never changed: the evaluation is a separate key, read here on top of it, so it can be revised or removed.
+  //   items[hid] = { credit?: 0..1 (the question as a whole: an exam's points and the default for every skill),
+  //                  out?: true (thrown out: no points, and none of its default evidence),
+  //                  skills?: [{ id, credit?: 0..1 (null = the question's credit), w?: weight multiplier (default 1) }] (replaces
+  //                  the question's own skills: the evaluator's choice of what it is evidence for; on a thrown-out question it is
+  //                  the only evidence it gives), note, at, by }
+  //   hid = the History id of the answer ('x:<exam>:<attempt>:<node>', 'p:<app>-v1:<event>', 'r:<review>:<event>', 'o:…', 'd:…', 'm:…')
+  // An observation keeps one credit for the question (exam points, the exam anchor, the item prediction); per-skill credit and
+  // weight ride along as o.sc / o.sw and are read where the evidence and memory of each skill are updated.
+  var EVAL_KEY = 'mm7-eval-v1';
+  function hidOf(o, id) { try { Object.defineProperty(o, 'hid', { value: id, enumerable: false, writable: true, configurable: true }); } catch (e) { o.hid = id; } }
+  function applyEval(obs, ev, cat) {
+    var items = ev && ev.v === 1 && ev.items && typeof ev.items === 'object' ? ev.items : null;
+    if (!items) return obs;
+    obs.forEach(function (o) {
+      var it = o && o.hid ? items[o.hid] : null;
+      if (!it || (o.kind !== 'answer' && o.kind !== 'trial')) return;
+      o.evaluated = true; o.raw = { credit: o.credit, skills: o.skills, ok: o.ok, tag: o.tag };
+      if (typeof it.credit === 'number' && isFinite(it.credit)) { o.credit = clamp(it.credit, 0, 1); o.ok = o.credit >= K.OK_RECALL; if (o.ok) o.tag = null; }
+      var list = Array.isArray(it.skills) ? it.skills.filter(function (x) { return x && x.id && (!cat || !cat.skills || cat.skills[x.id]); }) : null;
+      if (list) {
+        var sc = {}, sw = {}, ids = [], seen = {}, sum = 0;
+        list.forEach(function (x) {
+          if (seen[x.id]) return; seen[x.id] = 1; ids.push(x.id);
+          var c = typeof x.credit === 'number' && isFinite(x.credit) ? clamp(x.credit, 0, 1) : null, w = typeof x.w === 'number' && isFinite(x.w) ? Math.max(0, x.w) : 1;
+          if (c !== null) sc[x.id] = c; if (w !== 1) sw[x.id] = w; sum += c === null ? o.credit : c;
+        });
+        o.skills = ids; o.sc = Object.keys(sc).length ? sc : null; o.sw = Object.keys(sw).length ? sw : null;
+        if (it.out && ids.length && typeof it.credit !== 'number') { o.credit = sum / ids.length; o.ok = o.credit >= K.OK_RECALL; }
+      }
+      if (it.out) { o.out = true; if (!list) o.skills = []; }
+    });
+    return obs;
+  }
+
   function collect(getItem, cat, hub) {
     var obs = [];
     // --- chapter Paths: answers, and completed levels (from the progress store)
@@ -267576,7 +267660,7 @@ var LMS = (function () {
         if (e.type === 'offline') { doneAt[key] = e.t; return; }
         if (e.type !== 'answer' || !L) return;
         if (e.mst) doneAt[key] = e.t;
-        obs.push({ t: num(e.t, 0), src: 'path', kind: 'answer', app: c.appId, key: key, level: key, skills: L.skills, diff: L.level, ok: !!e.ok, credit: e.ok ? 1 : 0, ms: num(e.dt, 0), est: null, help: !!e.help, tag: null, w: 1, mst: !!e.mst });
+        obs.push({ t: num(e.t, 0), hid: 'p:' + c.appId + '-v1:' + (e.id !== undefined ? e.id : e.t), src: 'path', kind: 'answer', app: c.appId, key: key, level: key, skills: L.skills, diff: L.level, ok: !!e.ok, credit: e.ok ? 1 : 0, ms: num(e.dt, 0), est: null, help: !!e.help, tag: null, w: 1, mst: !!e.mst });
       });
       var lv = P && P.lv ? P.lv : {};
       Object.keys(lv).forEach(function (k) {
@@ -267592,17 +267676,17 @@ var LMS = (function () {
         if (!e) return;
         if (e.type === 'answer') {
           var es = entrySkills(cat, e.gid, e.terr), credit = e.credit !== undefined && e.credit !== null ? e.credit : e.ok ? 1 : 0;
-          obs.push({ t: num(e.t, 0), src: 'review', kind: 'answer', app: g.review, key: e.gid || e.terr, entry: e.gid || null, terr: e.terr || es.terr, tier: num(e.tier, es.tier),
+          obs.push({ t: num(e.t, 0), hid: 'r:' + g.review + ':' + e.id, src: 'review', kind: 'answer', app: g.review, key: e.gid || e.terr, entry: e.gid || null, terr: e.terr || es.terr, tier: num(e.tier, es.tier),
             skills: es.skills, diff: num(e.tier, num(es.tier, 1)), ok: credit >= K.OK_RECALL, credit: credit, ms: num(e.ms, 0), est: num(e.est, null), help: !!e.help, tag: e.ok ? null : e.tag || null, w: es.w, group: g.id });
         } else if (e.type === 'model') {
           var em = entrySkills(cat, e.gid, e.terr), cm = e.credit !== undefined && e.credit !== null ? e.credit : e.ok ? 1 : 0;
-          obs.push({ t: num(e.t, 0), src: 'review', kind: 'answer', app: g.review, key: 'model:' + (e.gid || ''), entry: e.gid || null, terr: e.terr || em.terr, tier: em.tier,
+          obs.push({ t: num(e.t, 0), hid: 'r:' + g.review + ':' + e.id, src: 'review', kind: 'answer', app: g.review, key: 'model:' + (e.gid || ''), entry: e.gid || null, terr: e.terr || em.terr, tier: em.tier,
             skills: em.skills, diff: num(em.tier, 2), ok: cm >= K.OK_RECALL, credit: cm, ms: 0, help: false, tag: e.ok ? null : e.tag || null, w: em.w * K.W_MODEL, group: g.id });
         } else if (e.type === 'trial') {
           var r = roundOf(cat, e.round);
           if (!r || !r.skills.length) return;
           var acc = num(e.acc, e.att ? (e.correct || 0) / e.att : 0);
-          obs.push({ t: num(e.t, 0), src: 'review', kind: 'trial', app: g.review, key: 'trial:' + e.round, round: e.round, terr: r.terr, skills: r.skills, diff: K.D_TRIAL,
+          obs.push({ t: num(e.t, 0), hid: 'r:' + g.review + ':' + e.id, src: 'review', kind: 'trial', app: g.review, key: 'trial:' + e.round, round: e.round, terr: r.terr, skills: r.skills, diff: K.D_TRIAL,
             ok: acc >= K.OK_RECALL, credit: acc, ms: num(e.secs, 75) * 1000, help: false, tag: null, tags: e.tags || null, w: K.W_TRIAL, group: g.id });
         }
       });
@@ -267615,7 +267699,7 @@ var LMS = (function () {
           var id = examNodeEntry(cat, n), es = entrySkills(cat, id, n.terr), an = n.ans;
           var credit = an.skipped ? 0 : num(an.credit, an.ok ? 1 : 0);
           var t = Math.max(created, sub - Math.max(0, el - num(an.at, el)));
-          obs.push({ t: t, src: 'exam', kind: 'answer', app: g.exam, key: (a.id || 'x') + ':' + n.id, entry: id, terr: n.terr, tier: n.tier, role: n.role, attempt: a.id || String(sub), group: g.id,
+          obs.push({ t: t, hid: 'x:' + g.exam + ':' + a.id + ':' + n.id, src: 'exam', kind: 'answer', app: g.exam, key: (a.id || 'x') + ':' + n.id, entry: id, terr: n.terr, tier: n.tier, role: n.role, attempt: a.id || String(sub), group: g.id,
             skills: es.skills, diff: num(n.tier, 1), ok: credit >= K.OK_RECALL, credit: credit, ms: num(an.ms, 0), est: n.meta ? num(n.meta.est, null) : null, help: false,
             tag: credit >= K.OK_RECALL ? null : an.skipped ? 'skipped' : an.tag || null, skipped: !!an.skipped, w: es.w * K.W_EXAM, submittedAt: sub });   // an exam answer is unaided and adaptive: W_EXAM x the weight
         });
@@ -267625,10 +267709,10 @@ var LMS = (function () {
     // --- the hub's own onramp answers
     var ss = hub && hub.onramp && hub.onramp.sessions || [];
     ss.forEach(function (s) {
-      (s.answers || []).forEach(function (a) {
+      (s.answers || []).forEach(function (a, ai) {
         if (!a || !a.skills || !a.skills.length) return;
         var credit = a.credit !== undefined && a.credit !== null ? a.credit : a.ok ? 1 : 0;
-        obs.push({ t: num(a.t, 0), src: 'onramp', kind: 'answer', app: 'mm7-hub-v1', key: a.specId || '', session: s.id, skills: a.skills, diff: num(a.diff, 1), ok: credit >= K.OK_RECALL, credit: credit,
+        obs.push({ t: num(a.t, 0), hid: 'o:' + s.id + ':' + ai, src: 'onramp', kind: 'answer', app: 'mm7-hub-v1', key: a.specId || '', session: s.id, skills: a.skills, diff: num(a.diff, 1), ok: credit >= K.OK_RECALL, credit: credit,
           ms: num(a.ms, 0), help: !!a.help, tag: credit >= K.OK_RECALL ? null : a.tag || null, terr: a.terr || null, entry: a.ref && a.ref.type === 'entry' ? a.ref.id : null,
           level: a.ref && a.ref.type === 'level' ? lvKey(a.ref.ch, a.ref.key) : null, hyp: a.hypId || null, w: 1 });
       });
@@ -267637,17 +267721,20 @@ var LMS = (function () {
     // Superlative problems are bank entries at their own tier with the challenge weight.
     var ds = dojoSessions(getItem, hub);
     ds.forEach(function (s) {
-      (s.answers || []).forEach(function (a) {
+      (s.answers || []).forEach(function (a, ai) {
         if (!a || !a.skills || !a.skills.length) return;
         var sk = a.skills.filter(function (x) { return !cat || !cat.skills || cat.skills[x]; }); if (!sk.length) return;
         var credit = a.credit !== undefined && a.credit !== null ? a.credit : a.ok ? 1 : 0, ok = credit >= K.OK_RECALL, w = 1;
         if (s.mode === 'sup') w = ok ? Math.min(K.SUP_MAX, 1 + K.SUP_STEP * (sk.length - 1)) : K.SUP_MISS / Math.sqrt(sk.length);
-        obs.push({ t: num(a.t, 0), src: 'dojo', kind: 'answer', app: 'mm7-hub-v1', key: a.move || a.entry || '', session: s.id, mode: s.mode || 'roll', skills: sk, diff: num(a.diff, K.D_QUICK), ok: ok, credit: credit,
+        obs.push({ t: num(a.t, 0), hid: 'd:' + s.id + ':' + ai, src: 'dojo', kind: 'answer', app: 'mm7-hub-v1', key: a.move || a.entry || '', session: s.id, mode: s.mode || 'roll', skills: sk, diff: num(a.diff, K.D_QUICK), ok: ok, credit: credit,
           ms: num(a.ms, 0), help: !!a.help, tag: ok ? null : a.tag || null, terr: a.terr || null, entry: a.entry || null, level: null, hyp: null, w: w });
       });
     });
     /* MAGE-HOOK:obs-src */ var MO = typeof MAGE_OBS === 'function' ? MAGE_OBS : null;   // mage/lms_bridge.js: Math Mage answers as ordinary observations
-    if (MO) MO(getItem, cat, hub).forEach(function (o) { if (o && o.t) obs.push(o); });
+    if (MO) MO(getItem, cat, hub).forEach(function (o) { if (o && o.t) { if (!o.hid && o.key) hidOf(o, 'm:' + o.key + (o.kind === 'again' ? ':again' : '')); obs.push(o); } });
+    // the History id rides along unseen (not enumerable), so contracts, hashes and exports of observations are as before
+    obs.forEach(function (o) { if (o && Object.prototype.propertyIsEnumerable.call(o, 'hid')) hidOf(o, o.hid); });
+    applyEval(obs, get(getItem, EVAL_KEY), cat);   // a teacher's evaluation (the Teacher Dashboard), when the record holds one
     // total order: answers stamped the same millisecond must not depend on which record was read
     // first, so a model rebuilt from an export matches the one it came from
     function cs(a, b) { return a < b ? -1 : a > b ? 1 : 0; }
@@ -267789,7 +267876,7 @@ var LMS = (function () {
   }
   var fitCache = { key: null, val: null };
   function fitK(obs, cat) {
-    var ck = [K.IMP_W, K.S_MASTERED, K.K_PRIOR_SD, K.IMP_W_PRIOR_SD, K.KGRID.length].join(',') + '|' + (obs.length ? obs.length + '|' + obs[0].t + '|' + obs[obs.length - 1].t + '|' + obs.reduce(function (a, o) { return a + (o.credit || 0) * (o.t % 997); }, 0) : '0');
+    var ck = [K.IMP_W, K.S_MASTERED, K.K_PRIOR_SD, K.IMP_W_PRIOR_SD, K.KGRID.length].join(',') + '|' + (obs.length ? obs.length + '|' + obs[0].t + '|' + obs[obs.length - 1].t + '|' + obs.reduce(function (a, o) { var x = (o.credit || 0) * (o.t % 997) + (o.skills ? o.skills.length : 0) * (o.t % 991); if (o.sc) for (var q in o.sc) x += o.sc[q] * (o.t % 983); return a + x; }, 0) : '0');
     if (fitCache.key === ck && fitCache.cat === cat) return fitCache.val;
     var v = fitKRaw(obs, cat); fitCache = { key: ck, cat: cat, val: v }; return v;
   }
@@ -267799,7 +267886,7 @@ var LMS = (function () {
     for (i = 0; i < obs.length; i++) {
       var o = obs[i]; if (!isEvidence(o)) continue;
       var c = clamp(num(o.credit, o.ok ? 1 : 0), 0, 1), kind = o.kind === 'trial' ? 1 : 0;
-      for (j = 0; j < o.skills.length; j++) push(o.skills[j], o.t, o.diff, c, kind, o.mst ? 1 : 0);
+      for (j = 0; j < o.skills.length; j++) push(o.skills[j], o.t, o.diff, o.sc && o.sc[o.skills[j]] !== undefined ? o.sc[o.skills[j]] : c, kind, o.mst ? 1 : 0);
       var imp = impliedOf(cat, o);
       if (imp) for (j = 0; j < imp.length; j++) {
         if (o.skills.indexOf(imp[j]) >= 0) continue;
@@ -267899,16 +267986,20 @@ var LMS = (function () {
   function applyObs(states, o, k, t0, w, cat, candT, hist, c, ce, base, g) {
     if (c === undefined) { var ow = obsWeights(o, t0); c = ow.c; ce = ow.ce; base = ow.base; g = ow.g; }
     var opts = { hist: hist };
+    var c0 = c, ce0 = ce, base0 = base;
     for (var j = 0; j < o.skills.length; j++) {
       var sid = o.skills[j], m = states[sid] || (states[sid] = newSkill());
+      // a teacher's evaluation can give one skill its own credit or weight (applyEval: o.sc, o.sw)
+      c = o.sc && o.sc[sid] !== undefined ? o.sc[sid] : c0; ce = c === c0 ? ce0 : (o.help ? c * K.HELP_CREDIT : c); base = o.sw && o.sw[sid] !== undefined ? base0 * o.sw[sid] : base0;
       m.n++; if (c >= K.OK_RECALL) { m.nOK++; m.succT.push(o.t); m.succD.push(o.diff); if (m.succT.length > 80) { m.succT.splice(0, 40); m.succD.splice(0, 40); } }
       m.A += base * ce * g; m.B += base * (1 - ce) * g; m.sw += base; m.swd += base * o.diff;
       if (o.diff < K.EASY_D) { m.Ae = (m.Ae || 0) + base * ce * g; m.Be = (m.Be || 0) + base * (1 - ce) * g; }   // the easy-number share of the evidence (mass cap)
       if (o.diff >= 2) { m.A2 += base * ce * g; m.B2 += base * (1 - ce) * g; }   /* MAGE-HOOK:aether-replay: the full-strength share (refined mass) */
       memStep(m, o.t, o.diff, c, k, o.kind === 'trial', o.mst);
       m.lastSeen = o.t;
-      if (opts.hist) { (m.hist || (m.hist = [])).push({ t: o.t, kind: o.kind, ok: c >= K.OK_RECALL, credit: c, diff: o.diff, src: o.src, key: o.key, mst: o.mst ? 1 : 0 }); if (m.hist.length > 300) m.hist.shift(); }
+      if (opts.hist) { (m.hist || (m.hist = [])).push({ t: o.t, kind: o.kind, ok: c >= K.OK_RECALL, credit: c, diff: o.diff, src: o.src, key: o.key, mst: o.mst ? 1 : 0, hid: o.hid || null, ev: o.evaluated ? 1 : 0 }); if (m.hist.length > 300) m.hist.shift(); }
     }
+    c = c0;
     var imp = impliedOf(cat, o);
     if (imp) for (var ii = 0; ii < imp.length; ii++) {
       if (o.skills.indexOf(imp[ii]) >= 0) continue;
@@ -268079,8 +268170,12 @@ var LMS = (function () {
       if (!out[a.group] || a.submittedAt > out[a.group].submittedAt) out[a.group] = a;
     });
     Object.keys(out).forEach(function (g) {
-      var a = out[g], lanes = {}, core = 0, stretch = 0;
+      var a = out[g], lanes = {}, core = 0, stretch = 0, outCore = 0, outStretch = 0, nOut = 0;
       a.nodes.forEach(function (n) {
+        if (n.out) {   // thrown out by the teacher: it earns nothing and its value leaves the maximum
+          nOut++; if (n.role === 'first' || n.role === 'second') { var vx = n.tier * (n.role === 'second' ? 0.5 : 1); if (n.tier <= 2) outCore += vx; else outStretch += vx; }
+          return;
+        }
         var L = lanes[n.terr] || (lanes[n.terr] = { terr: n.terr, reach: 0, tags: {}, missed: [], probe: null, summit: null, answered: 0 });
         L.answered++;
         var c = n.credit, f = c >= 0.75 ? 1 : c >= 0.5 ? 0.5 : 0;
@@ -268094,8 +268189,9 @@ var LMS = (function () {
         if (!n.ok) { if (n.tag) L.tags[n.tag] = (L.tags[n.tag] || 0) + 1; if (n.entry) L.missed.push(n.entry); }
       });
       var nl = Object.keys(cat.territories).filter(function (t) { return cat.territories[t].group === g; }).length || Object.keys(lanes).length;
-      out[g] = { group: g, attemptId: a.id, submittedAt: a.submittedAt, lanes: lanes, corePts: core, coreMax: 3 * nl, stretchPts: stretch, stretchMax: 7 * nl,
-        core: core / (3 * nl), stretch: stretch / (7 * nl), answered: a.nodes.length };
+      var cMax = Math.max(core, 3 * nl - outCore), sMax = Math.max(stretch, 7 * nl - outStretch);
+      out[g] = { group: g, attemptId: a.id, submittedAt: a.submittedAt, lanes: lanes, corePts: core, coreMax: cMax, stretchPts: stretch, stretchMax: sMax,
+        core: cMax ? core / cMax : 0, stretch: sMax ? stretch / sMax : 0, answered: a.nodes.length - nOut, thrownOut: nOut };
     });
     return out;
   }
@@ -268830,7 +268926,7 @@ var LMS = (function () {
     // extras (documented in API.md "Changes")
     // internals for hub/lms_forecast.js (the simulator steps the same states with the same rules)
     _x: { K: K, DAY: DAY, replay: replay, pOf: pOf, examSummaries: examSummaries, fitK: fitK, applyObs: applyObs, evalSkill: evalSkill, pSkill: pSkill, pCombine: pCombine, statusOf: statusOf, newSkill: newSkill, aggregate: aggregate, levelKeys: levelKeys, sig: sig, logit: logit, clamp: clamp, dayKey: dayKey, median: median, hash: hash },
-    massOf: massOf, massRaw: massRaw, obsWeights: obsWeights, dojoSessions: dojoSessions, DOJO_PREFIX: DOJO_PREFIX, predict: predict, easier: easier, memoryTrace: memoryTrace, implied: function (cat, ref) { return impliedOf(cat, ref.type === 'level' ? { kind: 'answer', credit: 1, level: lvKey(ref.ch, ref.key) } : { kind: 'answer', credit: 1, entry: ref.id }) || []; }, dayKey: dayKey, useCatalog: function (cat) { api._cat = cat; return api; }, _cat: null
+    EVAL_KEY: EVAL_KEY, applyEval: applyEval, massOf: massOf, massRaw: massRaw, obsWeights: obsWeights, dojoSessions: dojoSessions, DOJO_PREFIX: DOJO_PREFIX, predict: predict, easier: easier, memoryTrace: memoryTrace, implied: function (cat, ref) { return impliedOf(cat, ref.type === 'level' ? { kind: 'answer', credit: 1, level: lvKey(ref.ch, ref.key) } : { kind: 'answer', credit: 1, entry: ref.id }) || []; }, dayKey: dayKey, useCatalog: function (cat) { api._cat = cat; return api; }, _cat: null
   };
   return api;
 })();
@@ -270699,6 +270795,8 @@ var HHI = (function () {
     var sk = pr + it.skills.slice(0, 2).map(function (k) { return '<span class="hh-skc">' + esc(skillName(k)) + '</span>'; }).join('') + (it.skills.length > 2 ? '<span class="hh-skc more">+' + (it.skills.length - 2) + '</span>' : '');
     return '<details class="hh-row ' + (it.ok ? 'ok' : 'no') + '" data-id="' + esc(it.id) + '"><summary><span class="hmk" aria-label="' + (it.ok ? 'Right' : 'Missed') + '">' + (it.ok ? '✓' : '✕') + '</span><span class="tm">' + clock(it.t) + '</span><span class="sec s-' + it.src + '">' + esc(it.section) + '</span><span class="qx">' + esc(it.q || it.where || 'A problem') + '</span><span class="sks">' + sk + '</span></summary><div class="hh-body"></div></details>';
   }
+  // a teacher's evaluation of this answer (mm7-eval-v1, from the Teacher Dashboard): shown, never edited here
+  function evalOf(id) { var ev = parse('mm7-eval-v1'); return ev && ev.v === 1 && ev.items && ev.items[id] ? ev.items[id] : null; }
   function body(it) {
     var h = '<div class="hh-where">' + esc(it.section) + (it.where ? ' · ' + esc(it.where) : '') + ' · ' + esc(dayName(it.t)) + ', ' + clock(it.t) + '</div>';
     if (it.qh) h += '<div class="hh-prob prompt">' + clean(it.qh) + '</div>';
@@ -270708,6 +270806,8 @@ var HHI = (function () {
     h += '<dl class="hh-ans"><div class="' + (it.ok ? 'ok' : 'no') + '"><dt>Your answer</dt><dd>' + (it.entry !== '' ? esc(String(it.entry)) : '<i>not recorded</i>') + '</dd></div>' + (it.show !== '' ? '<div><dt>Correct answer</dt><dd>' + esc(String(it.show)) + '</dd></div>' : '') + '</dl>';
     if (it.steps && it.steps.length) h += '<details class="hh-steps"><summary>Worked steps</summary><ol>' + it.steps.map(function (s) { return '<li>' + clean(s) + '</li>'; }).join('') + '</ol></details>';
     h += '<div class="hh-meta">' + [it.ok ? 'Right' : (it.credit > 0 && it.credit < 1 ? 'Partly right (' + Math.round(it.credit * 100) + '%)' : 'Missed'), it.ms ? 'took ' + secs(it.ms) : '', it.practice ? 'practice: kept apart, never evidence' : '', it.help ? 'help was opened' : '', it.tier !== undefined && it.tier !== null ? 'tier ' + it.tier : '', it.tag ? 'slip noticed: ' + ((HX.CAT.tags && HX.CAT.tags[it.tag] && (HX.CAT.tags[it.tag].name || HX.CAT.tags[it.tag].label)) || it.tag) : ''].filter(Boolean).map(esc).join(' · ') + '</div>';
+    var ev = evalOf(it.id);
+    if (ev) h += '<p class="hh-note hh-eval"><b>Evaluated by your teacher:</b> ' + esc(ev.out ? 'set aside, so it does not count against you' + (ev.skills && ev.skills.length ? ' (it counts as evidence for ' + plural(ev.skills.length, 'skill') + ' instead)' : '') : typeof ev.credit === 'number' ? (ev.credit >= 0.75 ? 'counted as right' : ev.credit > 0 ? 'counted as partly right (' + Math.round(ev.credit * 100) + '%)' : 'counted as not right') + (ev.skills ? ', with the skills it shows chosen by your teacher' : '') : 'the skills it shows were chosen by your teacher') + '.</p>';
     if (it.skills.length) h += '<div class="hh-skl"><span class="lab">Skills this problem uses</span>' + it.skills.map(function (k) { return '<button type="button" class="hh-skb" data-skill="' + esc(k) + '"><b>' + esc(k) + '</b> ' + esc(skillName(k)) + '</button>'; }).join('') + '</div>';
     return h;
   }
@@ -274023,10 +274123,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = HOB;
   }
   function examStore(g) { var x = J(g.xkey); return x && Array.isArray(x.attempts) ? x : null; }
   function latestAttempt(g) { var x = examStore(g); if (!x) return null; return x.attempts.filter(function (a) { return a.status === 'submitted'; }).sort(function (a, b) { return (b.submittedAt || 0) - (a.submittedAt || 0); })[0] || null; }
-  function attemptScore(a) {
-    var core = 0, str = 0, lanes = Object.keys(a.lanes || {}).length || 8;
-    (a.nodes || []).forEach(function (n) { if (!n.ans || (n.role !== 'first' && n.role !== 'second')) return; var c = n.ans.credit, f = c >= 0.75 ? 1 : c >= 0.5 ? 0.5 : 0, pts = n.tier * f * (n.role === 'second' ? 0.5 : 1); if (n.tier <= 2) core += pts; else str += pts; });
-    return { core: core, coreMax: lanes * 3, stretch: str, stretchMax: lanes * 7, lanes: lanes };
+  // the exam's own scoring (xr/exam_core.js pointsOf), read through a teacher's evaluation when the record holds one (mm7-eval-v1:
+  // a re-credited question scores at its new credit; a thrown-out question earns nothing and its value leaves the maximum)
+  function attemptScore(a, g) {
+    var core = 0, str = 0, lanes = Object.keys(a.lanes || {}).length || 8, outC = 0, outS = 0, ev = J('mm7-eval-v1'), items = ev && ev.v === 1 && ev.items ? ev.items : {}, nEv = 0;
+    (a.nodes || []).forEach(function (n) {
+      if (!n.ans || (n.role !== 'first' && n.role !== 'second')) return;
+      var it = g ? items['x:' + g.xkey + ':' + a.id + ':' + n.id] : null, c = n.ans.credit, v = n.tier * (n.role === 'second' ? 0.5 : 1);
+      if (it) { nEv++; if (it.out) { if (n.tier <= 2) outC += v; else outS += v; return; } if (typeof it.credit === 'number') c = it.credit; }
+      var f = c >= 0.75 ? 1 : c >= 0.5 ? 0.5 : 0, pts = v * f; if (n.tier <= 2) core += pts; else str += pts;
+    });
+    return { core: core, coreMax: Math.max(core, lanes * 3 - outC), stretch: str, stretchMax: Math.max(str, lanes * 7 - outS), lanes: lanes, evaluated: nEv };
   }
   function viewReviews(main) {
     var wrap = el('div', 'hb-wrap novar'); main.appendChild(wrap);
@@ -274045,8 +274152,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = HOB;
       h += '<div class="hb-app' + (hasX ? '' : ' soon') + '"><h3>Exam</h3><p>' + (hasX ? (a ? 'Last submitted ' + fmtDate(a.submittedAt) + '.' : 'An adaptive exam, about 45–70 minutes, with a full report at the end.') : 'Coming soon. It is being built now.') + '</p>' + (hasX ? (LX ? lockNote(LX) : '<div><a class="btn ' + (a ? 'ghost' : 'primary') + ' sm" href="#app/' + g.exam + '">Open the Exam</a></div>') : '') + '</div></div>';
       if (typeof TAC !== 'undefined' && TAC.group && TAC.group(g.id)) h += '<div class="hb-app"><h3>Skills &amp; Tactics</h3><p>What you see → what to do, problems that join the chapters, the slips to watch for, and the formulas.</p>' + (LR ? lockNote(LR) : '<div><a class="btn ghost" href="#reviews/' + g.id + '/tactics">Open</a></div>') + '</div>';
       if (a) {
-        var sc = attemptScore(a), lanes = Object.keys(a.lanes || {});
-        h += '<div class="hb-tiles"><div class="hb-tile"><div class="l">Core (tiers 1–2)</div><div class="v">' + fmtPts(sc.core) + ' / ' + sc.coreMax + '</div><div class="s">comparable to a chapter test</div></div><div class="hb-tile"><div class="l">Stretch (tiers 3–4)</div><div class="v">' + fmtPts(sc.stretch) + ' / ' + sc.stretchMax + '</div><div class="s">transfer and challenge</div></div></div>';
+        var sc = attemptScore(a, g), lanes = Object.keys(a.lanes || {});
+        h += '<div class="hb-tiles"><div class="hb-tile"><div class="l">Core (tiers 1–2)</div><div class="v">' + fmtPts(sc.core) + ' / ' + sc.coreMax + '</div><div class="s">comparable to a chapter test</div></div><div class="hb-tile"><div class="l">Stretch (tiers 3–4)</div><div class="v">' + fmtPts(sc.stretch) + ' / ' + sc.stretchMax + '</div><div class="s">transfer and challenge</div></div></div>' + (sc.evaluated ? '<p class="hb-note">Your teacher has evaluated ' + plural(sc.evaluated, 'question') + ' on this exam; the scores and your skills include the evaluation.</p>' : '');
         h += '<div><div class="hb-ladr hb-ladh"><span>Area · how far it reached</span><span>1</span><span>2</span><span>3</span><span>4</span><span></span></div><div class="hb-lad">' + lanes.map(function (T) { var r = a.lanes[T].reach || 0; return '<div class="hb-ladr" role="img" aria-label="' + esc(terrName(T)) + ' reached tier ' + r + '"><span class="nm">' + esc(terrName(T)) + '</span>' + [1, 2, 3, 4].map(function (t) { return '<i class="hb-dot' + (t <= r ? ' on' : '') + '"></i>'; }).join('') + '<span class="tg">' + (r ? 'tier ' + r : 'not cleared') + '</span></div>'; }).join('') + '</div></div>';
       }
       var f = ff.filter(function (x) { return x.fromGroup === g.id; })[0];
@@ -274201,7 +274308,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = HOB;
       (typeof CANON !== 'undefined' ? '<div class="hb-srow" id="hbDuelRow"' + (hub.settings.mage ? '' : ' hidden') + '><div><h3>Allow duels on this device</h3><p>The Obscuratum’s practice duels against the mythical figures, and later a duel with another player nearby. Duels are never scored. Off, the Obscuratum stays closed on this device.</p></div><div class="seg" role="group" aria-label="Allow duels on this device" id="hbDuels">' + [['0', 'Off'], ['1', 'On']].map(function (k) { return '<button type="button" data-d="' + k[0] + '" aria-pressed="' + ((hub.settings.duels === false ? '0' : '1') === k[0]) + '">' + k[1] + '</button>'; }).join('') + '</div></div>' : '') +   /* MAGE-HOOK:duel-switch */
       '<div class="hb-srow"><div><h3>Export the learner record</h3><p>One JSON file with every Path, Review, Exam and hub record in this browser.</p></div><button class="btn ghost sm" type="button" id="hbExport">Export</button><div class="hb-msg" id="hbExportMsg"></div></div>' +
       '<div class="hb-srow" id="hbFullRow"><div><h3>Export with the full problem history</h3><p>The same learner record plus every whole problem kept on this device (figures and worked steps included). A bigger file; importing it on another device brings the entire History along.</p></div><button class="btn ghost sm" type="button" id="hbExportFull">Export all</button><div class="hb-msg" id="hbExportFullMsg" role="status"></div></div>' +
-      '<div class="hb-srow"><div><h3>Import</h3><p>A learner record exported here (it replaces the record in this browser), or an exam report (.html) saved by one of the Exams, whose attempt is added to that exam.</p></div><button class="btn ghost sm" type="button" id="hbImport">Import a file</button><input type="file" id="hbFile" accept=".json,.html,.htm,application/json,text/html" hidden><div class="hb-msg" id="hbImportMsg" role="status"></div></div>' +
+      '<div class="hb-srow"><div><h3>Import</h3><p>A learner record exported here (it replaces the record in this browser), an exam report (.html) saved by one of the Exams, whose attempt is added to that exam, or a teacher’s evaluation from the Teacher Dashboard, which is added to the record as it is now.</p></div><button class="btn ghost sm" type="button" id="hbImport">Import a file</button><input type="file" id="hbFile" accept=".json,.html,.htm,application/json,text/html" hidden><div class="hb-msg" id="hbImportMsg" role="status"></div></div>' +
       '<div class="hb-srow"><div><h3>Reset</h3><p>Erase every Path, Review, Exam and hub record in this browser. Export first if you might want it back.</p></div><button class="btn ghost sm" type="button" id="hbReset">Reset everything</button><div class="hb-msg" id="hbResetMsg"></div></div>';
     // where the record lives, and (when served as an app) whether it works offline and can be installed
     var drow = el('div', 'hb-srow'); drow.innerHTML = '<div><h3>On this device</h3><p id="hbDevText">Checking…</p></div><button class="btn ghost sm" type="button" id="hbInstall" hidden>Install</button><div class="hb-msg" id="hbDevMsg" role="status"></div>';
@@ -274301,6 +274408,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = HOB;
       return;
     }
     var o; try { o = JSON.parse(s); } catch (e) { say('That file is not valid JSON or an exam report.'); return; }
+    // a teacher's evaluation alone (the Teacher Dashboard's "Export the evaluation"): it replaces only the evaluation key, so
+    // everything the student has done since the record was exported stays as it is
+    if (o && o.format === 'mm7-evaluation') {
+      var ev = o.eval; if (!ev || ev.v !== 1 || !ev.items || typeof ev.items !== 'object') { say('That evaluation file is damaged.'); return; }
+      var nI = Object.keys(ev.items).length, had = J('mm7-eval-v1');
+      confirmBox('Bring in the teacher’s evaluation?', 'It evaluates ' + plural(nI, 'answer') + (o.by ? ' (by ' + o.by + ')' : '') + (o.exported ? ', saved ' + fmtDate(Date.parse(o.exported)) : '') + '. ' + (had ? 'It replaces the evaluation already here. ' : '') + 'Nothing else in the record changes; mastery is recomputed with it.', 'Bring it in', function () {
+        setItem('mm7-eval-v1', JSON.stringify(ev)); dirty = true; M = null; say('The teacher’s evaluation of ' + plural(nI, 'answer') + ' is in. Mastery now includes it.'); toast('Evaluation imported.');
+      });
+      return;
+    }
     if (!o || o.format !== 'mm7-learner-record' || !o.keys || typeof o.keys !== 'object') { say('That file is not a learner record exported from the hub. (A single app’s export goes into that app’s own History tab.)'); return; }
     var keys = Object.keys(o.keys).filter(function (k) { return isRecordKey(k) && typeof o.keys[k] === 'string'; });
     if (!keys.length) { say('That learner record is empty.'); return; }
