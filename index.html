@@ -2865,6 +2865,28 @@ span.mc-row { cursor: default; }
 .mc-acts:empty { display: none; } .mc-acts { display: flex; flex-wrap: wrap; gap: 8px; }
 @container mc (max-width: 420px) { .mc-row { padding: 10px 10px 10px 14px; gap: 4px 10px; } .mc-name { font-size: 19px; } .mc-body { padding: 4px 12px 14px 14px; } .mc-state { display: none; } }
 
+/* ---------- cast outcomes (POLICY §1l.4; kit/stage.js `whole`, C's MEASURE.outcome): calm, distinct, after the trace lands.
+   The end frame is the base style, so reduced motion shows it at once with the same words. Never shake, never red. */
+.mm-cast-chip .mm-oc-sym:empty { display: none; } .mm-cast-chip .mm-oc-sym { font-size: 1.05em; line-height: 1; margin-right: 2px; }
+.mm-cast-chip.oc-true { color: var(--mm-held); } .mm-cast-chip.oc-fizzle { color: var(--mm-thread); } .mm-cast-chip.oc-misfire, .mm-cast-chip.oc-backfire { color: var(--mm-night-ink-2); }
+.mm-stage-world .mp-cast, .mm-stage-world .mm-inst-svg :is(.in-castpart, .in-fill, .in-wt.cast, .in-say, .in-beam, .in-rodl), .mm-stage-world .mm-inst-html td.cast { transform-box: fill-box; transform-origin: center; }
+/* a true cast: the effect lands whole, and its light stays */
+.mm-stage-world.oc-true .mp-cast, .mm-stage-world.oc-true .mm-inst-svg :is(.in-castpart, .in-fill, .in-beam, .in-say) { filter: drop-shadow(0 0 4px rgba(242, 196, 107, .55)); animation: ocTrue 900ms ease-out both; }
+/* a fizzle: it forms, then fades just short of holding */
+.mm-stage-world.oc-fizzle .mp-cast, .mm-stage-world.oc-fizzle .mm-inst-svg :is(.in-castpart, .in-fill, .in-wt.cast, .in-beam, .in-rodl), .mm-stage-world.oc-fizzle .mm-inst-html td.cast { opacity: .42; animation: ocFizzle 1100ms ease-out both; }
+/* a misfire: it lands where its numbers send it (the trace as drawn, muted) */
+.mm-stage-world.oc-misfire .mp-cast { opacity: .85; }
+/* a backfire: it recoils, briefly, and settles where its numbers put it */
+.mm-stage-world.oc-backfire .mp-cast, .mm-stage-world.oc-backfire .mm-inst-svg :is(.in-castpart, .in-fill, .in-wt.cast, .in-beam, .in-rodl) { opacity: .8; animation: ocRecoil 650ms cubic-bezier(.3, .7, .4, 1) both; }
+@keyframes ocTrue { 0% { filter: none; } 45% { filter: drop-shadow(0 0 10px rgba(242, 196, 107, .9)); } 100% { filter: drop-shadow(0 0 4px rgba(242, 196, 107, .55)); } }
+@keyframes ocFizzle { 0% { opacity: 1; transform: scale(1); } 100% { opacity: .42; transform: scale(.985); } }
+@keyframes ocRecoil { 0% { transform: translate(0, 0); opacity: 1; } 28% { transform: translate(-8px, 4px); opacity: .7; } 60% { transform: translate(3px, -1px); } 100% { transform: translate(0, 0); opacity: .8; } }
+/* the seal mirrors the outcome: whole; almost closed, then faded; open where it fell; snapped back */
+.mm-seal.oc-fizzle .arc { stroke-dasharray: 92 100; stroke: var(--mm-thread); opacity: .55; }
+.mm-seal.oc-backfire .arc { stroke-dasharray: 16 100; }
+@media (prefers-reduced-motion: reduce) { :root:not([data-motion="full"]) .mm-stage-world[class*="oc-"] :is(.mp-cast, .in-castpart, .in-fill, .in-wt, .in-beam, .in-say, .in-rodl, td) { animation: none; } }
+:root[data-motion="reduced"] .mm-stage-world[class*="oc-"] :is(.mp-cast, .in-castpart, .in-fill, .in-wt, .in-beam, .in-say, .in-rodl, td) { animation: none; }
+
 .hb-update { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 60; display: flex; align-items: center; gap: 12px;
   background: var(--ink); color: var(--bg); padding: 8px 8px 8px 16px; border-radius: 999px; box-shadow: var(--shadow); font-size: 15px; max-width: calc(100vw - 24px); }
 .hb-update button { font: inherit; font-weight: 700; border: 0; border-radius: 999px; padding: 6px 14px; background: var(--accent-ink, #fff); color: var(--accent, #2d6a86); cursor: pointer; }
@@ -57610,6 +57632,7 @@ var MAGE_GENS = (function () {
     var p = { id: o.id, role: 'part', tier: o.tier, spell: o.spell, working: o.working, look: o.look, prompt: o.prompt, instruments: o.instruments, uses: o.uses || [], boxes: o.boxes, est: o.est,
       trace: { terr: { full: Object.keys(terrs), support: o.support || [] }, skills: Object.keys(sk), ideas: (o.ideas || []).map(function (i) { return IDEA[i]; }), decisions: o.decisions || [] } };
     if (o.givens) p.givens = o.givens;
+    offs(p.boxes);
     return p;
   }
   // ---- the plan a part states and draws (POLICY §1f rulings 1–2; B's SHAPES.HallPlan; A's PartDef.givens { named, draw, casts?, withhold? }).
@@ -57640,8 +57663,49 @@ var MAGE_GENS = (function () {
     if (o.word) b.word = o.word;
     return b;
   }
+  // How far off a wrong whole cast is (POLICY §1l; C's MEASURE.outcome, E's duel table, OBX.MEASURE): one measure per box, set by
+  // its mathematics, written out below for every number and point a spell asks for, so none is left to a guess from its wording.
+  //   place  an x, a y or an interval end the cast puts on the line or the plane, or a point: E's grid measure (off by 1/2 a
+  //          fizzle, up to 3 a misfire, beyond a backfire), the same as the duel's board
+  //   count  a whole count or a whole result (a coefficient, a signed total): off by 1 a fizzle, 2 to 6 a misfire, beyond a backfire
+  //   fine   a slope, a gain, a middle or reach, a solution: off by 1/4 a fizzle, up to 3/2 a misfire (E: solutions are fine)
+  //   rel    an amount (area, length, radius, rate, price, percent, angle, volume): 10% off a fizzle, up to double a misfire
+  // A line's slope and start keep C's own measure (fine, as E's). Signs (POLICY §1l.6): the right direction with the wrong edge
+  // (≤ for <, or an interval with an end held or let go) is a fizzle; the direction reversed is a misfire; '=' or no inequality
+  // at all, where an inequality is asked, is a backfire.
+  var OFF = { place: { measure: 'grid' }, count: { measure: 'count' }, fine: { measure: 'fine' }, rel: { measure: 'relative' } };
+  var MEASURE_OF = (function (t) { var o = {}; Object.keys(t).forEach(function (sp) { o[sp] = {}; t[sp].split(/,\s*/).forEach(function (e) { var w = e.split(' '); o[sp][w[0]] = w[1]; }); }); return o; })({
+    'tally': 'P1.land place, P2.chg place, P3.val place', 'stepping-stones': 'P1.v count, P2.p count, P2.q count, P3.v count',
+    'balance-of-words': 'P2.x fine', 'true-form': 'P1.d rel, P3.v rel', 'courier': 'P1.d rel, P2.x place, P3.c place',
+    'narrow-way': 'P1.n place, P2.v count, P3.v count', 'unwinding': 'P1.x fine, P2.n fine, P3.p count, P3.q count',
+    'far-lantern': 'P1.range rel, P3.height place, P4.gain fine', 'echo': 'P1.dist count, P2.lo place, P2.hi place, P3.land place, P1.low place, P1.high place',
+    'sounding': 'P1.across count, P1.up count, P2.sq rel, P3.far rel', 'beam': 'P2.height place, P3.length rel',
+    'pursuit': 'P1.v rel, P2.d rel, P4.t rel', 'volley': 'P1.step fine, P2.h place', 'glyph': 'P1.p count, P1.q count, P2.add count, P3.h place',
+    'line-test': 'P2.h place', 'crossing': 'P1.x fine, P2.x fine, P3.k fine', 'ratio-line': 'P1.u rel, P2.k2 rel, P3.r rel, P5.x rel',
+    'doubling': 'P1.v rel, P2.n count, P3.x rel', 'dilate': 'P1.k fine, P2.bp place',
+    'ward': 'P2.x count', 'threefold': 'P2.x place, P4.x place, P5.a rel', 'mirror-ward': 'P1.n place, P2.v count, P3.d fine',
+    'shield': 'P1.r rel, P2.a rel, P3.k rel, P4.r count', 'veil': 'P1.c fine, P1.r fine, P2.g count, P3.wd fine',
+    'fog': 'P1.lo place, P1.hi place, P2.n count, P4.len rel', 'smoke': 'P1.a fine, P1.r fine, P2.h count, P3.ar rel',
+    'fine-reading': 'P1.v rel, P2.x fine, P3.d fine', 'wheel': 'P1.a rel, P2.p rel, P3.x rel, P4.n rel', 'mend': 'P1.pc rel, P2.b rel, P3.now rel',
+    'waning': 'P1.b rel, P2.v rel, P3.pc rel', 'ledger': 'P1.v count, P2.v count, P3.x fine, P4.m fine',
+    'level-seal': 'P1.x fine, P2.x rel, P3.x fine', 'bracket-seal': 'P1.x fine, P2.m count, P2.n count',
+    'sorting': 'P3.k count, P4.p count, P4.q count', 'reservoir': 'P1.r rel, P2.t rel, P3.v rel, P4.t count', 'blast': 'P1.v rel, P2.c rel, P3.s rel, P4.p rel',
+    'mirror-turn': 'P1.g rel, P2.x fine, P3.x count', 'polygon-path': 'P1.s rel, P2.p count, P2.q count, P3.pc rel',
+    'floor': 'P1.a count, P1.b count, P2.p count, P2.q count, P3.v rel, P4.ar rel', 'plan': 'P1.m rel, P2.c rel, P3.a rel, P4.t rel',
+    'court': 'P2.lo place, P2.hi place, P3.g rel, P4.m rel', 'vessel': 'P1.v rel, P2.a rel, P3.x rel',
+    'cylinder': 'P1.v rel, P2.a rel, P3.q rel, P4.s rel', 'net': 'P1.a rel, P2.f rel, P3.p count, P3.q count',
+    'slice': 'P2.d rel, P3.a rel, P4.x rel' });
+  function edge(t) { return String(t).replace(/\s+/g, '').replace(/≤/g, '<').replace(/≥/g, '>'); }
+  function ineq(t) { return /[<>≤≥]/.test(String(t)); }
+  function offs(boxes) { boxes.forEach(function (b) { delete b.count; if (b.kind !== 'choice' || !b.choices) return;
+    var k = b.choices.filter(function (c) { return c.id === b.key; })[0]; if (!k || !ineq(k.label)) return;
+    var near = b.choices.filter(function (c) { return c.id !== b.key && ineq(c.label) && edge(c.label) === edge(k.label); }).map(function (c) { return c.id; }),
+      none = b.choices.filter(function (c) { return !ineq(c.label); }).map(function (c) { return c.id; });
+    if (near.length || none.length) b.off = { fizzleAt: near, backfireAt: none }; }); }
+  function measures(c) { var t = MEASURE_OF[c.spell] || {}; c.parts.forEach(function (p) { p.boxes.forEach(function (b) {
+    var m = t[p.id + '.' + b.id]; if (m && (b.kind === 'num' || b.kind === 'point')) b.off = Object.assign({}, OFF[m]); }); }); }
   function spart(st, o) {
-    var bx = o.boxes.map(function (b) { return sbox(st, Object.assign({ terr: o.rune, skills: o.skills, from: o.from }, b)); });
+    var bx = o.boxes.map(function (b) { var x = sbox(st, Object.assign({ terr: o.rune, skills: o.skills, from: o.from }, b)); if (b.count) x.count = true; return x; });
     return part({ id: o.id, tier: TIER[st], spell: o.spell, working: o.working, look: o.look || 'marks', est: o.est || ({ friendly: 60, full: 90, crown: 120 })[st], instruments: o.instruments, ideas: o.ideas || [],
       support: o.support || [], uses: o.uses || [], prompt: o.prompt, decisions: o.decisions || [], givens: o.givens, boxes: bx });
   }
@@ -57656,7 +57720,7 @@ var MAGE_GENS = (function () {
     var r = rng((Math.imul(seed, 0x9E3779B1) + (strength === 'full' ? 97 : strength === 'crown' ? 193 : 31)) >>> 0), c = null;
     for (var t = 0; t < 80 && !c; t++) c = g[strength](r, seed);   // a generator returns null to deal again (a given would stand at an answer)
     if (!c) throw new Error('MAGE_GENS: ' + spell + ' ' + strength + ' found no casting for seed ' + seed);
-    c.v = 1; c.spell = spell; c.strength = strength; c.seed = seed;
+    c.v = 1; c.spell = spell; c.strength = strength; c.seed = seed; measures(c);
     return c;
   }
   function twinSeed(seed) { return (Math.imul(seed ^ 0x5bd1e995, 0x2545F491) >>> 0) % 1000000007; }
@@ -57668,7 +57732,7 @@ var MAGE_GENS = (function () {
     if (!p || p.boxes.length !== 1 || p.boxes[0].kind !== 'num') throw new Error('MAGE_GENS: ' + ref + ' is not a single-number part');
     return { ref: ref, spell: m[1], strength: m[2], seed: +m[4], part: p };
   }
-  return { reg: reg, make: make, twin: twin, twinSeed: twinSeed, charge: charge, charges: charges, has: function (s, k) { return !!(REG[s] && (!k || REG[s][k])); }, spells: function () { return Object.keys(REG); },
+  return { offs: offs, MEASURE_OF: MEASURE_OF, OFF: OFF, reg: reg, make: make, twin: twin, twinSeed: twinSeed, charge: charge, charges: charges, has: function (s, k) { return !!(REG[s] && (!k || REG[s][k])); }, spells: function () { return Object.keys(REG); },
            Q: { R: R, add: add, sub: sub, mul: mul, div: div, eq: eq, isInt: isInt, str: str, show: show, pt: pt, parse: parse, gcd: gcd }, box: box, part: part, rng: rng, sbox: sbox, spart: spart, TIER: TIER, w: w,
            plan: { pt: ptq, num: num, at: at, named: named, point: point, givens: givens, frame: frame, line: line, mark: mark } };
 })();
@@ -58031,7 +58095,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = MAGE_GENS;
         givens: { named: [N('figures', 'the stones in figures 1, 2 and 3', [String(fig(1)), String(fig(2)), String(fig(3))]), N('figure numbers', 'the figures shown', ['1', '2', '3']), N(F ? 'figure' : 'stones', F ? 'the figure asked' : 'the count asked', String(F ? n0 : N0))], draw: [],
           inst: { kind: 'table', cols: ['figure', 'stones'], rows: [['1', String(fig(1))], ['2', String(fig(2))], ['3', String(fig(3))], F ? [String(n0), { box: 'v' }] : [{ box: 'v' }, String(N0)]], casts: [{ box: 'v', as: 'cell' }] } },
         boxes: [F ? { id: 'v', word: 'stones', key: N0, ver: it, by: 'the start plus the step for every figure after the first, and again figure by figure', tags: [{ v: a + n0 * d, tag: 'step0' }, { v: n0 * d, tag: 'nostart' }] }
-          : { id: 'v', word: 'figure', key: n0, ver: (function () { for (var m = 1; m < 200; m++) if (fig(m) === N0) return m; return -1; })(), by: '(the count − the start) ÷ the step, plus one, and again by counting figures up to the count', tags: [{ v: (N0 - a) / d, tag: 'step0' }] }] });
+          : { id: 'v', word: 'figure', count: true, key: n0, ver: (function () { for (var m = 1; m < 200; m++) if (fig(m) === N0) return m; return -1; })(), by: '(the count − the start) ÷ the step, plus one, and again by counting figures up to the count', tags: [{ v: (N0 - a) / d, tag: 'step0' }] }] });
       var P2 = G.spart(st, { id: 'P2', spell: 'stepping-stones', working: 'stones-rule', rune: 'E3', skills: F ? ['S23', 'S32'] : ['S23', 'S32', 'T18'], from: F ? 'E3.0' : 'E3.3B', instruments: ['table'], ideas: [5],
         prompt: 'The stones in figure n are ' + a + ' + ' + d + '(n − 1). Write this as p·n + q: give p and q.',
         decisions: ['multiply every term inside the brackets', 'then combine the plain numbers'],
@@ -58165,7 +58229,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = MAGE_GENS;
         prompt: F ? 'A narrow way runs from ' + S(R(s)) + ' to ' + e + ' on the line. How long is it?' : 'The way holds the whole numbers from ' + S(R(s)) + ' to ' + e + ', both ends included. How many whole numbers is that?',
         decisions: F ? ['across zero, the two distances from zero add'] : ['the length, then one more for the first end'],
         givens: { named: [N('ends', 'the two ends', [String(s), String(e)])], draw: [PL.mark('A', s, 'one end'), PL.mark('B', e, 'the other end')], frame: PL.line([s, e]), casts: [{ box: 'v', as: 'note' }], makes: [{ ref: 'P2.v', kind: 'span', lo: String(s), hi: String(e), label: F ? 'the way: {v} long' : 'the way: {v} whole numbers' }] },
-        boxes: [{ id: 'v', word: F ? 'length' : 'whole numbers', key: F ? e - s : e - s + 1, ver: F ? Math.abs(s) + e : (function () { var n = 0; for (var t = s; t <= e; t++) n++; return n; })(), by: F ? 'the higher end minus the lower, and again as the two distances from zero added' : 'the length plus one, and again by counting', tags: F ? [{ v: e + s, tag: 'samesign' }] : [{ v: e - s, tag: 'fencepost' }] }] });
+        boxes: [{ id: 'v', word: F ? 'length' : 'whole numbers', count: !F, key: F ? e - s : e - s + 1, ver: F ? Math.abs(s) + e : (function () { var n = 0; for (var t = s; t <= e; t++) n++; return n; })(), by: F ? 'the higher end minus the lower, and again as the two distances from zero added' : 'the length plus one, and again by counting', tags: F ? [{ v: e + s, tag: 'samesign' }] : [{ v: e - s, tag: 'fencepost' }] }] });
       var P3 = G.spart(st, { id: 'P3', spell: 'narrow-way', working: 'way-test', rune: 'E2', skills: ['S5', 'S9', 'S10', 'T28', 'T34'], from: 'E2.1A', instruments: ['numline'], ideas: [6],
         prompt: 'A step on the way is worth ' + S(R(p)) + 'x + ' + br(q) + '. What is it worth at x = −' + k + '?', decisions: ['put the negative in for x', 'multiply before you add'],
         givens: { named: [N('rule', 'the worth of a step', [String(p), String(q)]), N('x', 'the value of x', String(-k))], draw: [PL.mark('X', -k, 'x')], frame: PL.line([-k, v3]), casts: [{ box: 'v', as: 'x' }], makes: [mk('P3.v', 'W', 'its worth')] },
@@ -58451,7 +58515,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = MAGE_GENS;
           prompt: 'Two charges race. The adding one is ' + A + ' at step 1 and adds ' + d + ' each step. The multiplying one is ' + s + ' at step 1 and is multiplied by ' + mul + ' each step. At which step is the multiplying charge first ahead?', decisions: ['work both side by side, step by step', 'ahead means greater, not equal'],
           givens: { named: [N('adding', 'the adding charge', [String(A), String(d)]), N('multiplying', 'the multiplying charge', [String(s), String(mul)]), N('step 1', 'the first step', '1')], draw: [],
             inst: { kind: 'table', cols: ['step', 'adding', 'multiplying'], rows: [['1', String(A), String(s)], ['2', String(ad(2)), String(g(2))], ['3', String(ad(3)), String(g(3))], [{ box: 'n' }, '?', '?']], casts: [{ box: 'n', as: 'cell' }] } },
-          boxes: [{ id: 'n', word: 'step', key: first, ver: first2, by: 'the formulas compared step by step, and again by running both charges', tags: [{ v: first - 1, tag: 'notahead' }, { v: first + 1, tag: 'fencepost' }] }] }),
+          boxes: [{ id: 'n', word: 'step', count: true, key: first, ver: first2, by: 'the formulas compared step by step, and again by running both charges', tags: [{ v: first - 1, tag: 'notahead' }, { v: first + 1, tag: 'fencepost' }] }] }),
         G.spart(st, { id: 'P3', spell: 'doubling', working: 'doubling-percent', rune: 'R3', skills: ['C20', 'C21'], from: 'R3.1B', instruments: ['table'], ideas: [9],
           prompt: 'A third charge grows by ' + pc + '% every step. By what number is it multiplied each step? Give it as a decimal.', decisions: ['growing by p% keeps all of it and adds p hundredths'],
           givens: { named: [N('growth', 'the growth each step, in percent', String(pc))], draw: [], inst: { kind: 'table', cols: ['charge before', 'grows by', 'multiplier'], rows: [['100', pc + '%', { box: 'x' }]], casts: [{ box: 'x', as: 'cell' }] } },
@@ -58650,7 +58714,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = MAGE_GENS;
         G.spart(st, { id: 'P4', spell: 'shield', working: 'shield-cover', rune: 'M7', skills: ['E29', 'E35', 'E36'], from: 'M7.3A', instruments: ['plane'], ideas: [7],
           prompt: 'A shield centred at O(0, 0) covers the ' + W + ' by ' + H + ' rectangle only if r² ≥ (' + S(R(W, 2)) + ')² + (' + S(R(H, 2)) + ')². What is the least whole radius r that covers it?', decisions: ['work out the right side', 'the least whole r whose square is at least that'],
           givens: { named: [N('O', 'the centre', at([0, 0])), N('rectangle', 'the rectangle’s sides', [String(W), String(H)]), N('halves', 'half of each side', [Q.str(R(W, 2)), Q.str(R(H, 2))]), N('square', 'squared', '2')], draw: [P('O', [0, 0], 'the centre'), poly], casts: [{ box: 'r', as: 'note' }], makes: [{ ref: 'P4.r', kind: 'ring', at: ['0', '0'], label: 'the least shield, radius {v}' }] },
-          boxes: [{ id: 'r', word: 'least whole radius', key: least, ver: Math.ceil(Math.sqrt(f(r2)) - 1e-9), by: 'the first whole number whose square reaches the right side, and again by rounding its square root up', tags: [{ v: least - 1, tag: 'roundeddown' }, { v: Math.round(f(r2)) === least ? null : Math.round(f(r2)), tag: 'noroot' }] }] })
+          boxes: [{ id: 'r', word: 'least whole radius', count: true, key: least, ver: Math.ceil(Math.sqrt(f(r2)) - 1e-9), by: 'the first whole number whose square reaches the right side, and again by rounding its square root up', tags: [{ v: least - 1, tag: 'roundeddown' }, { v: Math.round(f(r2)) === least ? null : Math.round(f(r2)), tag: 'noroot' }] }] })
       ];
       return { rep: 'plane', world: w, plan: { frame: frame }, parts: parts };
     };
@@ -58705,7 +58769,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = MAGE_GENS;
         G.spart(st, { id: 'P2', spell: 'fog', working: 'fog-greatest', rune: 'M7', skills: ['E29', 'E35', 'E36'], from: 'M7.3A', instruments: ['numline'], ideas: [7],
           prompt: 'Each step into the fog costs ' + S(g) + ' of your light, and you may spend at most ' + S(M) + '. What is the greatest whole number of steps x with ' + S(g) + 'x ≤ ' + S(M) + '?', decisions: ['solve as an equation, then keep the whole numbers that fit', 'round down, never up'],
           givens: { named: [N('cost', 'light per step', Q.str(g)), N('light', 'the most you may spend', Q.str(M))], draw: [PL.mark('0', 0, 'no steps')], frame: PL.line([0, great + 1]), casts: [{ box: 'n', as: 'x' }], makes: [mk('P2.n', 'N', 'the most steps')] },
-          boxes: [{ id: 'n', word: 'steps', key: great, ver: (function () { var t = 0; while (f(Q.mul(g, R(t + 1))) <= f(M) + 1e-12) t++; return t; })(), by: 'the quotient rounded down, and again by counting steps until the light runs out', tags: [{ v: great + 1, tag: 'roundedup' }] }] }),
+          boxes: [{ id: 'n', word: 'steps', count: true, key: great, ver: (function () { var t = 0; while (f(Q.mul(g, R(t + 1))) <= f(M) + 1e-12) t++; return t; })(), by: 'the quotient rounded down, and again by counting steps until the light runs out', tags: [{ v: great + 1, tag: 'roundedup' }] }] }),
         G.spart(st, { id: 'P3', spell: 'fog', working: 'fog-words', rune: 'E4', skills: ['S11', 'S12', 'S13'], from: 'E4.1A', instruments: ['words'], ideas: [7],
           prompt: 'The fog holds every x from ' + S(R(A3)) + ' to ' + S(R(B3)) + ', ' + (incl[0] && incl[1] ? 'both ends included' : incl[0] ? 'including ' + S(R(A3)) + ' but not ' + S(R(B3)) : 'including ' + S(R(B3)) + ' but not ' + S(R(A3))) + '. Which says this?', decisions: ['“including” is ≤', '“not” is <'],
           givens: { named: [N('ends', 'the two ends', [String(A3), String(B3)])], draw: [] },
@@ -59054,7 +59118,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = MAGE_GENS;
         G.spart(st, { id: 'P4', spell: 'reservoir', working: 'res-need', rune: 'M7', skills: ['E29', 'E35', 'E36'], from: 'M7.3A', instruments: ['pbar'], ideas: [7],
           prompt: 'The reservoir holds ' + s0 + ' litres and gains ' + dec(rate) + ' each minute. The village needs at least ' + dec(need) + ' litres. What is the least whole number of minutes t with ' + s0 + ' + ' + dec(rate) + 't ≥ ' + dec(need) + '?', decisions: ['solve as an equation', 'a part-minute is not enough: round up'],
           givens: { named: [N('start', 'the litres at the start', String(s0)), N('rate', 'litres each minute', dec(rate)), N('need', 'the litres needed', dec(need))], draw: [], inst: { kind: 'bar', whole: String(cap), unit: 'L', parts: [{ label: 'at the start', value: String(s0) }], casts: [] } },
-          boxes: [{ id: 't', word: 'least minutes', key: least, ver: Math.ceil((f(need) - s0) / f(rate) - 1e-12), by: 'the least whole t that reaches the need, and again the solution rounded up', tags: [{ v: least - 1, tag: 'roundeddown' }] }] })
+          boxes: [{ id: 't', word: 'least minutes', count: true, key: least, ver: Math.ceil((f(need) - s0) / f(rate) - 1e-12), by: 'the least whole t that reaches the need, and again the solution rounded up', tags: [{ v: least - 1, tag: 'roundeddown' }] }] })
       ];
       return { rep: 'percent bar', world: w, parts: parts };
     };
@@ -59230,7 +59294,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = MAGE_GENS;
           prompt: F ? 'A triangular garden on the plan has angles of ' + a1 + '° and ' + a2 + '°. What is its third angle?' : 'A triangular garden has sides of ' + sa + ' m and ' + sb + ' m. What is the greatest whole length its third side can have?', decisions: F ? ['a triangle’s angles add to 180°'] : ['the third side is less than the other two added'],
           givens: { named: F ? [N('angles', 'the two angles', [String(a1), String(a2)]), N('triangle', 'a triangle’s angles', '180')] : [N('sides', 'the two sides', [String(sa), String(sb)])], draw: [], inst: { kind: 'table', cols: F ? ['angle', 'degrees'] : ['side', 'metres'], rows: F ? [['first', String(a1)], ['second', String(a2)], ['third', { box: 't' }]] : [['first', String(sa)], ['second', String(sb)], ['third, at most', { box: 't' }]], casts: [{ box: 't', as: 'cell' }] } },
           boxes: [F ? { id: 't', word: 'third angle', unit: '°', key: third, ver: (function () { var x = 180; x -= a1; x -= a2; return x; })(), by: '180 minus the two, and again by taking each away in turn', tags: [{ v: 360 - a1 - a2, tag: 'halfturn' }] }
-            : { id: 't', word: 'greatest third side', unit: 'm', key: most, ver: (function () { var t = 1; while (t + 1 < sa + sb) t++; return t; })(), by: 'one less than the sum, and again by trying lengths until the rods no longer close', tags: [{ v: sa + sb, tag: 'closes' }] }] })
+            : { id: 't', word: 'greatest third side', unit: 'm', count: true, key: most, ver: (function () { var t = 1; while (t + 1 < sa + sb) t++; return t; })(), by: 'one less than the sum, and again by trying lengths until the rods no longer close', tags: [{ v: sa + sb, tag: 'closes' }] }] })
       ];
       return { rep: 'plan', world: w, parts: parts };
     };
@@ -59773,7 +59837,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = DUEL_PROTO
   if (typeof require === 'function' && typeof module === 'object' && require.main === module && process.argv.indexOf('--test') > 0) process.exit(A._selfTest() ? 0 : 1);
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  var VERSION = '1.6.0';   // 1.6.0 (M3, B's tools, additive): BoxDef.tol (a measured reading's tolerance; C's scoreCast); givens.named[].measured (read off a tool, never stated).
+  var VERSION = '1.7.0';   // 1.7.0 (POLICY §1l, additive): BoxDef.off and a variant's off: C's outcome thresholds (fizzle, misfire, backfire) per box.
+  // earlier: var VERSION = '1.6.0';   // 1.6.0 (M3, B's tools, additive): BoxDef.tol (a measured reading's tolerance; C's scoreCast); givens.named[].measured (read off a tool, never stated).
   // earlier: var VERSION = '1.5.0';   // 1.5.0 (M3 follow-up, additive): PartView.draw.history [{ casts, vals, verdict }] for B's muted earlier casts.
   // earlier: 1.4.0 (M3, additive): BoxDef.word (the box's label on screen); givens.frame1d (a number line's frame { x0, x1, step }).
   // earlier: var VERSION = '1.3.0';   // 1.3.0 (M2.5, additive): PartDef.givens { named, draw, casts, withhold, undrawn }; PartView.givens and PartView.draw (the Hall plan in B's shape).
@@ -59870,7 +59935,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = DUEL_PROTO
   function BoxDef(b, ctx, where) {
     var P = []; where = where || 'BoxDef ' + (b && b.id);
     if (!isObj(b)) return [where + ': not an object'];
-    only(b, ['id', 'kind', 'marks', 'crown', 'gate', 'tier', 'terr', 'skills', 'from', 'calc', 'key', 'ver', 'own', 'tags', 'choices', 'rep', 'unit', 'word', 'tol'], where, P);
+    only(b, ['id', 'kind', 'marks', 'crown', 'gate', 'tier', 'terr', 'skills', 'from', 'calc', 'key', 'ver', 'own', 'tags', 'choices', 'rep', 'unit', 'word', 'tol', 'off'], where, P);
+    if (b.off !== undefined && !(isObj(b.off) && Object.keys(b.off).every(function (k) { return ['fizzle', 'misfire', 'step', 'fizzleAt', 'backfireAt', 'slope', 'measure'].indexOf(k) >= 0; }))) P.push(where + ': off { measure, fizzle, misfire, step, fizzleAt, backfireAt, slope } (C\'s outcome thresholds)');
     if (b.tol !== undefined && !(isStr(b.tol, 1) && /^\d+(\/\d+)?$/.test(b.tol) && b.kind === 'num')) P.push(where + ': tol is a reading\'s tolerance, an exact non-negative rational, on a num box');
     if (b.word !== undefined && !isStr(b.word, 1)) P.push(where + ': word is the box\'s label in plain words');
     need(b, ['id', 'kind', 'marks', 'crown', 'gate', 'tier', 'terr', 'skills', 'from', 'calc', 'key', 'ver', 'own', 'tags'], where, P);
@@ -59994,7 +60060,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = DUEL_PROTO
     if (v.boxes.map(function (b) { return b.id; }).sort().join() !== ids.slice().sort().join()) P.push(where + ': a variant has the same boxes as its part');
     v.boxes.forEach(function (vb) {
       var base = part.boxes.filter(function (b) { return b.id === vb.id; })[0]; if (!base) return;
-      only(vb, ['id', 'key', 'ver', 'tags', 'own', 'choices'], where + '.' + vb.id, P);
+      only(vb, ['id', 'key', 'ver', 'tags', 'own', 'choices', 'off'], where + '.' + vb.id, P);
       var merged = {}; Object.keys(base).forEach(function (k) { merged[k] = base[k]; }); Object.keys(vb).forEach(function (k) { merged[k] = vb[k]; });
       BoxDef(merged, ctx, where + '.' + vb.id).forEach(function (x) { P.push(x); });
     });
@@ -61034,6 +61100,11 @@ var HALL_KIT = (function () {
 
   // every world the Hall deals: the base and each part's twin and siblings (a frame must hold them all, since one frame rolls through the Hall)
   function worlds(world, inst) { var out = [world]; if (!inst) return out; Object.keys(inst.twins || {}).forEach(function (pid) { [inst.twins[pid]].concat(inst.siblings[pid] || []).forEach(function (v) { var w = {}; Object.keys(world).forEach(function (k) { w[k] = world[k]; }); Object.keys(v.world || {}).forEach(function (k) { w[k] = v.world[k]; }); out.push(w); }); }); return out; }
+  // C's outcome words for a sign chosen (POLICY §1l.6): the right direction with the wrong endpoint (≥ for >) is a fizzle, the direction
+  // reversed a misfire (C's default for a wrong choice), and '=' (an equation where an inequality is asked) the wrong kind of answer: a backfire
+  // C's outcome words for a sign chosen (POLICY §1l.6): the right direction with the wrong endpoint (≥ for >) is a fizzle, the direction
+  // reversed a misfire (C's default for a wrong choice), and '=' (an equation where an inequality is asked) the wrong kind of answer: a backfire
+  function signOff(key) { var near = { ge: 'gt', gt: 'ge', le: 'lt', lt: 'le' }[key]; return { fizzleAt: near ? [near] : [], backfireAt: key === 'eq' ? [] : ['eq'] }; }
   function define(spec) {
     var ids = Object.keys(spec.parts);
     function full(pid, w) {
@@ -61047,7 +61118,7 @@ var HALL_KIT = (function () {
       var parts = ids.map(function (pid) { return full(pid, spec.work(pid, world, null)); });
       var inst = { hall: spec.def.id, seed: seed, world: JSON.parse(JSON.stringify(world)), parts: parts, twins: {}, siblings: {}, door: { hall: spec.door(world) } };
       ids.forEach(function (pid) {
-        var vs = overs[pid].map(function (o) { var w = spec.work(pid, merged(world, o), o); return { world: JSON.parse(JSON.stringify(o)), prompt: w.prompt, givens: w.givens, boxes: w.boxes.map(function (b) { var x = { id: b.id, key: b.key, ver: b.ver, tags: b.tags || [] }; if (b.choices) x.choices = b.choices; if (b.own !== undefined) x.own = b.own; return x; }) }; });
+        var vs = overs[pid].map(function (o) { var w = spec.work(pid, merged(world, o), o); return { world: JSON.parse(JSON.stringify(o)), prompt: w.prompt, givens: w.givens, boxes: w.boxes.map(function (b) { var x = { id: b.id, key: b.key, ver: b.ver, tags: b.tags || [] }; if (b.choices) x.choices = b.choices; if (b.off) x.off = b.off; if (b.own !== undefined) x.own = b.own; return x; }) }; });
         inst.twins[pid] = vs[0]; inst.siblings[pid] = [vs[1], vs[2]];
       });
       // a number line (givens.frame1d) gets its own frame { x0, x1, step }, one for the part, its twin and its siblings: it holds every given point
@@ -61101,13 +61172,13 @@ var HALL_KIT = (function () {
     'M2.3A': 'R16', 'M8.3B': 'U1,U3,U10', 'R5.3B': 'C32,C31,C7,C23,C33', 'E5.3C': 'T8,T9,T22,T25,T36', 'E6.3A': 'S13,S14,S28,S29,S30', 'E1.3A': 'T32,S5,S7,T34', 'M6.3A': 'U21,U25', 'M13.3A': 'U16,U15,R31,R32', 'E8.3C': 'S32,S34,S36,S37', 'M12.3A': 'E45,E46', 'M3.3B': 'E21,U18,R31,R32,E16', 'R9.3B': 'P59,P60', 'K5.3B': 'G46,G41,G45', 'K2.3A': 'G12,G15,G52', 'K3.3B': 'G14,G26,G16,G25', 'M5.3B': 'E16,E17', 'R4.3A': 'P26,P22,C31,C32', 'K4.3B': 'G24,G28,G49', 'M9.3A': 'U29,U30', 'E4.3B': 'S13,S17,S9,S10,S15,S32,S38', 'E7.3A': 'T13,T17' };
   // the fixed side of one box: bx('E7.3C', { gate: true }) or bx('R5.3A', { kind: 'num', calc: 'basic', unit: '%', crown: true, marks: 2 })
   function bx(from, o) { o = o || {}; var terr = from.split('.')[0], tier = +from.split('.')[1].charAt(0);
-    return { kind: o.kind || 'num', marks: o.marks || 1, crown: !!o.crown, gate: !!o.gate, tier: o.tier || (o.crown ? 4 : tier), terr: terr, skills: SK[from].split(','), from: from, calc: o.calc === undefined ? false : o.calc, unit: o.unit, rep: o.rep || 'typed', word: o.word, tol: o.tol }; }
+    return { kind: o.kind || 'num', marks: o.marks || 1, crown: !!o.crown, gate: !!o.gate, tier: o.tier || (o.crown ? 4 : tier), terr: terr, skills: SK[from].split(','), from: from, calc: o.calc === undefined ? false : o.calc, unit: o.unit, rep: o.rep || 'typed', word: o.word, tol: o.tol, off: o.off }; }
   // a part's fixed side: meta(role, spell, working, look, instruments, uses, full, support, ideas, decisions)
   function meta(o) { var sk = {}; return { role: o.role || 'part', tier: o.tier || 3, spell: o.spell, working: o.working, look: o.look || 'seal', instruments: o.instruments || ['typed'], uses: o.uses || [],
     trace: { terr: { full: o.full || [], support: o.support || [] }, skills: [], ideas: o.ideas || [], decisions: o.decisions || [] } }; }
-  function part(o, boxes, est) { var m = meta(o), sk = {}; Object.keys(boxes).forEach(function (k) { boxes[k].skills.forEach(function (s) { sk[s] = 1; }); if (boxes[k].unit === undefined) delete boxes[k].unit; if (boxes[k].word === undefined) delete boxes[k].word; if (boxes[k].tol === undefined) delete boxes[k].tol; }); m.trace.skills = Object.keys(sk);
+  function part(o, boxes, est) { var m = meta(o), sk = {}; Object.keys(boxes).forEach(function (k) { boxes[k].skills.forEach(function (s) { sk[s] = 1; }); if (boxes[k].unit === undefined) delete boxes[k].unit; if (boxes[k].word === undefined) delete boxes[k].word; if (boxes[k].tol === undefined) delete boxes[k].tol; if (!boxes[k].off) delete boxes[k].off; }); m.trace.skills = Object.keys(sk);
     return { meta: m, est: est, boxes: boxes }; }
-  return { SK: SK, bx: bx, part: part, define: define, worlds: worlds, two: two, named: named, pItem: pItem, tags: tags, frameOf: frameOf, show: show, fr: fr, q: q, S: S, P: P, Q: Q };
+  return { SK: SK, signOff: signOff, bx: bx, part: part, define: define, worlds: worlds, two: two, named: named, pItem: pItem, tags: tags, frameOf: frameOf, show: show, fr: fr, q: q, S: S, P: P, Q: Q };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = HALL_KIT;
 /* ===== HALL_KIT END ===== */
@@ -61249,7 +61320,7 @@ var H02 = (function () {
       var ch = [['a', B.k + 'f − ' + sh(pp) + ' = ' + sh(qq)], ['b', B.k + '(f − ' + sh(pp) + ') = ' + sh(qq)], ['c', sh(pp) + ' − ' + B.k + 'f = ' + sh(qq)], ['d', B.k + 'f + ' + sh(pp) + ' = ' + sh(qq)], ['e', 'f − ' + sh(pp) + ' = ' + B.k + ' · ' + sh(qq)]].map(function (x) { return { id: x[0], label: x[1] }; });
       return { prompt: 'The heart balances the feather. On the balance, ' + B.k + ' times the feather’s weight, less ' + sh(pp) + ' g, equals ' + sh(qq) + ' g. Choose the equation for the feather’s weight f, then find f in grams.',
         givens: { named: [named('balance', 'the multiple, the amount less and the total', [B.k, B.p, B.q])], draw: [] },
-        boxes: [{ id: 'eq', choices: ch, key: 'a', ver: { value: 'a', by: 'k × f, then less p, equals q' }, tags: [{ v: 'b', tag: 'signdrop' }] },
+        boxes: [{ id: 'eq', choices: ch, key: 'a', off: { fizzleAt: ['d'], backfireAt: ['e'] }, ver: { value: 'a', by: 'k × f, then less p, equals q' }, tags: [{ v: 'b', tag: 'signdrop' }] },
           { id: 's', key: ks, ver: { value: S(s2), by: 'add p to both pans, then divide by k' }, tags: K.tags(ks, [['signdrop', S(Q.div(Q.sub(qq, pp), kk))]]) }] }; }
     if (pid === 'C' || pid === 'Hub1') { var C = w.C, kx = solC(C);
       if (pid === 'C') return { prompt: 'Keep the balance level: ' + eqC(C) + '. First write the left pan without brackets, as ax − c: give a and c. Then find x, and what each pan weighs at that x.', givens: { named: [named('equation', 'the balance’s two pans', [C.p, C.q, C.r, C.s, C.t])], draw: [], inst: { kind: 'balance', left: [C.p + '(' + C.q + 'x − ' + C.r + ')'], right: [C.s + 'x', C.t], unknown: 'x', casts: [{ box: 'x', as: 'x' }] } },
@@ -61378,7 +61449,7 @@ var H05 = (function () {
     P1: K.part({ spell: 'courier', working: 'pace', look: 'seal', full: ['R2', 'R9'], ideas: ['tri', 'units', 'line'], decisions: ['distance ÷ time, fractions kept exact', 'the slope from two points, then the start'] }, { v: bx('R2.3A', { word: 'The pace', gate: true, unit: 'leagues per hour' }), m: bx('R9.3A', { word: 'His line: m', gate: true }), b: bx('R9.3A', { word: 'and b', gate: true }) }, 180),
     P2: K.part({ spell: 'pursuit', working: 'level', look: 'charge', instruments: ['plane'], full: ['M6'], ideas: ['tri', 'line'], decisions: ['the gap closes at the difference of the speeds'] }, { t: bx('M6.4A', { word: 'The time', gate: true, unit: 'hours' }), d: bx('M6.4A', { word: 'The distance', gate: true, unit: 'leagues' }) }, 140),
     P3: K.part({ spell: 'crossing', working: 'ahead', look: 'marks', instruments: ['plane'], full: ['R10'], ideas: ['line'], decisions: ['ahead means the line is higher'] }, { dir: bx('R10.3A', { word: 'The sign', gate: true, kind: 'choice' }), t: bx('R10.3A', { word: 'The time', gate: true }) }, 110),
-    P4: K.part({ spell: 'waning', working: 'horn', look: 'bar', instruments: ['pbar'], full: ['R5', 'R3'], ideas: ['bar'], decisions: ['the change over the old level', 'the same percent of a smaller level', 'one multiplier for two falls: multiply the multipliers'] }, { pct: bx('R5.4A', { word: 'The percent', gate: true, unit: '%' }), next: bx('R5.4A', { word: 'After the next fall', gate: true }), mult: bx('R3.3A', { word: 'One multiplier for both falls', gate: true }) }, 160),
+    P4: K.part({ spell: 'waning', working: 'horn', look: 'bar', instruments: ['pbar'], full: ['R5', 'R3'], ideas: ['bar'], decisions: ['the change over the old level', 'the same percent of a smaller level', 'one multiplier for two falls: multiply the multipliers'] }, { pct: bx('R5.4A', { word: 'The percent', gate: true, unit: '%' }), next: bx('R5.4A', { word: 'After the next fall', gate: true }), mult: bx('R3.3A', { off: { measure: 'relative' }, word: 'One multiplier for both falls', gate: true }) }, 160),
     P5: K.part({ role: 'crown', tier: 4, spell: 'pursuit', working: 'goal', look: 'seal', support: ['M7', 'M6'], ideas: ['tri', 'words'], decisions: ['reach the goal no later than Hugi'] }, { dir: bx('M7.3A', { word: 'The sign', kind: 'choice', tier: 4 }), v: bx('M6.4A', { word: 'The least speed', crown: true, marks: 2 }) }, 140)
   };
   function pace(rnd) { var v = Q.of(rnd.int(5, 18), 2), t = rnd.pick([Q.of(1, 6), Q.of(1, 4), Q.of(1, 3), Q.of(1, 2), Q.of(2, 3), Q.of(3, 4)]), d = Q.mul(v, t); if (d.d > 12) return null; var m = rnd.int(3, 9), b = rnd.int(-5, 7), t1 = rnd.int(1, 3), t2 = t1 + rnd.int(2, 4); if (b === 0) return null; return { dist: S(d), time: S(t), t1: String(t1), d1: String(m * t1 + b), t2: String(t2), d2: String(m * t2 + b) }; }
@@ -61402,7 +61473,7 @@ var H05 = (function () {
       var kt = two('t3', L.t, S(Q.div(P(r.h), Q.sub(P(r.w), P(r.u)))));
       return { prompt: raceWords(r) + ' On the plan, Hugi’s line is d = ' + r.u + 't + ' + sh(P(r.h)) + ' and Thjalfi’s is d = ' + r.w + 't. For which times t is Thjalfi ahead? Choose the sign and give the number.',
         givens: { named: [named('race', 'Hugi’s head start and the two speeds', [r.h, r.u, r.w]), named('start', 'Thjalfi’s start', '0')], draw: pts.concat([{ id: 'hugi', kind: 'line', m: r.u, b: r.h, name: 'Hugi’s line' }, { id: 'thjalfi', kind: 'line', m: r.w, b: '0', name: 'Thjalfi’s line' }]), casts: [{ box: 't', as: 'x' }] },
-        boxes: [{ id: 'dir', choices: TDIR, key: 'gt', ver: { value: 'gt', by: 'Thjalfi’s line is above Hugi’s after they cross' }, tags: [{ v: 'lt', tag: 'leftright' }] }, { id: 't', key: kt, ver: { value: kt, by: 'where the two rules are equal' }, tags: [] }] }; }
+        boxes: [{ id: 'dir', choices: TDIR, key: 'gt', off: K.signOff('gt'), ver: { value: 'gt', by: 'Thjalfi’s line is above Hugi’s after they cross' }, tags: [{ v: 'lt', tag: 'leftright' }] }, { id: 't', key: kt, ver: { value: kt, by: 'where the two rules are equal' }, tags: [] }] }; }
     if (pid === 'P4') { var Hh = P(w.horn.H), Ll = P(w.horn.L), p1 = Q.mul(Q.div(Q.sub(Hh, Ll), Hh), Q.of(100)), p2 = Q.sub(Q.of(100), Q.mul(Q.div(Ll, Hh), Q.of(100))), kp = two('pct', S(p1), S(p2));
       var n1 = Q.mul(Ll, Q.sub(Q.of(1), Q.div(p1, Q.of(100)))), n2 = Q.div(Q.mul(Ll, Ll), Hh), kn = two('next', S(n1), S(n2));
       return { prompt: 'Thor drinks from the horn, and its level falls from ' + w.horn.H + ' to ' + w.horn.L + ' mm. By what percent did it fall? If it fell again by the same percent, what would the level be? What single number multiplies the first level to give the level after both falls?',
@@ -61413,7 +61484,7 @@ var H05 = (function () {
     if (Q.num(v1b) > 40) throw new Error('skip');
     return { prompt: 'Hugi starts ' + sh(P(r5.h)) + ' leagues ahead and runs at ' + r5.u + ' leagues an hour. The goal is ' + w.goal.G + ' leagues from Thjalfi’s start. What speeds v let Thjalfi reach the goal no later than Hugi? Choose the sign and give the number.',
       givens: { named: [named('race', 'Hugi’s head start and speed', [r5.h, r5.u]), named('goal', 'the goal', w.goal.G)], draw: [] },
-      boxes: [{ id: 'dir', choices: DIR, key: 'ge', ver: { value: 'ge', by: 'faster is better; reaching it at the same time still counts' }, tags: [{ v: 'gt', tag: 'oneplace' }] }, { id: 'v', key: kv, ver: { value: S(v2b), by: 'Hugi’s time to the goal, then the goal over that time' }, tags: K.tags(kv, [['totalgain', S(Q.div(G, Q.div(G, u5)))]]) }] };
+      boxes: [{ id: 'dir', choices: DIR, key: 'ge', off: K.signOff('ge'), ver: { value: 'ge', by: 'faster is better; reaching it at the same time still counts' }, tags: [{ v: 'gt', tag: 'oneplace' }] }, { id: 'v', key: kv, ver: { value: S(v2b), by: 'Hugi’s time to the goal, then the goal over that time' }, tags: K.tags(kv, [['totalgain', S(Q.div(G, Q.div(G, u5)))]]) }] };
   }
   function frame(w, inst) { var t = 0, d = 0; K.worlds(w, inst).forEach(function (x) { var L = level(x.race); t = Math.max(t, Q.num(P(L.t))); d = Math.max(d, Q.num(P(L.d)), Q.num(P(x.race.h))); }); return K.frameOf([['0', '0'], [String(Math.ceil(t * 1.6)), String(Math.ceil(d * 1.5))]]); }
   function door(w) { return 'In this Hall Thjalfi races Hugi on a straight track, and Thor drinks from the horn. Distances are in leagues, speeds in leagues an hour, and the horn\u2019s level in millimetres. Every number is in the part that uses it.'; }
@@ -61442,8 +61513,8 @@ var H06 = (function () {
   var parts = {
     A: K.part({ role: 'spoke', spell: 'wheel', working: 'heap', look: 'bar', instruments: ['bar'], full: ['R1', 'M2'], ideas: ['bar'], decisions: ['the total over the parts of the ratio', 'which digits repeat'] },
       { wheat: bx('R1.3B', { word: 'Wheat seeds', gate: true }), poppy: bx('R1.3B', { word: 'Poppy seeds', gate: true }), block: bx('M2.3B', { word: 'The repeating digits', gate: true }) }, 140),
-    B: K.part({ role: 'spoke', spell: 'wheel', working: 'sector', look: 'pie', instruments: ['protractor'], full: ['R4', 'K1', 'K3'], ideas: ['bar'], decisions: ['a sector is its angle over 360'] }, { pct: bx('R4.3B', { word: 'The percent', gate: true, unit: '%' }), n: bx('R4.3B', { word: 'How many', gate: true }) , frac: bx('K1.3A', { word: 'Its share of a full turn', gate: true }), sarea: bx('K3.3B', { word: 'The sector’s area', gate: true, unit: 'π cm²' }) }, 200),
-    C: K.part({ role: 'spoke', spell: 'waning', working: 'wool', look: 'bar', instruments: ['pbar'], full: ['R3', 'R5', 'M10'], ideas: ['bar'], decisions: ['multiply the multipliers; never add the percents'] }, { m: bx('R3.3A', { word: 'The multiplier', gate: true }) , change: bx('R5.3B', { word: 'The change overall', gate: true, unit: '%' }), day: bx('M10.3A', { word: 'On day 4', gate: true, unit: 'g' }) }, 190),
+    B: K.part({ role: 'spoke', spell: 'wheel', working: 'sector', look: 'pie', instruments: ['protractor'], full: ['R4', 'K1', 'K3'], ideas: ['bar'], decisions: ['a sector is its angle over 360'] }, { pct: bx('R4.3B', { word: 'The percent', gate: true, unit: '%' }), n: bx('R4.3B', { word: 'How many', gate: true }) , frac: bx('K1.3A', { off: { measure: 'relative' }, word: 'Its share of a full turn', gate: true }), sarea: bx('K3.3B', { word: 'The sector’s area', gate: true, unit: 'π cm²' }) }, 200),
+    C: K.part({ role: 'spoke', spell: 'waning', working: 'wool', look: 'bar', instruments: ['pbar'], full: ['R3', 'R5', 'M10'], ideas: ['bar'], decisions: ['multiply the multipliers; never add the percents'] }, { m: bx('R3.3A', { off: { measure: 'relative' }, word: 'The multiplier', gate: true }) , change: bx('R5.3B', { word: 'The change overall', gate: true, unit: '%' }), day: bx('M10.3A', { word: 'On day 4', gate: true, unit: 'g' }) }, 190),
     D: K.part({ role: 'spoke', spell: 'mend', working: 'jar', look: 'bar', instruments: ['pbar'], full: ['R6'], ideas: ['bar', 'words'], decisions: ['the part is the percent of the whole'] }, { jar: bx('R6.3A', { word: 'The jar holds', gate: true, unit: 'mL' }) }, 120),
     Hub: K.part({ role: 'crown', tier: 4, spell: 'waning', working: 'nights', look: 'table', instruments: ['table'], support: ['M10'], ideas: ['step'], decisions: ['a share of what is left, night by night'] }, { night: bx('M10.3A', { word: 'The night', crown: true, marks: 2 }) }, 130)
   };
@@ -61537,7 +61608,7 @@ var H07 = (function () {
     if (pid === 'P3') { var sA = P(w.sun.a), sB = P(w.sun.b), sC = P(w.sun.c), x1 = Q.div(Q.sub(sC, sB), Q.neg(sA)), x2 = Q.div(Q.sub(sB, sC), sA), kx = two('x', S(x1), S(x2));
       return { prompt: 'The sun’s bound is −' + w.sun.a + 'x ' + (+w.sun.b < 0 ? '− ' + (-w.sun.b) : '+ ' + w.sun.b) + ' ≤ ' + sh(sC) + '. First, what is the left side, −' + w.sun.a + 'x ' + (+w.sun.b < 0 ? '− ' + (-w.sun.b) : '+ ' + w.sun.b) + ', when x = ' + sh(P(w.sun.x0)) + '? Then solve the bound: choose the sign and give the number.',
         givens: { named: [named('bound', 'the inequality’s numbers', [w.sun.a, w.sun.b, w.sun.c]), named('x0', 'the x to try', w.sun.x0)], draw: [], casts: [{ box: 'x', as: 'x' }], frame1d: true },
-        boxes: [(function () { var x0 = P(w.sun.x0), kl = two('lhs', S(Q.add(Q.mul(Q.neg(sA), x0), sB)), S(Q.sub(sB, Q.mul(sA, x0)))); return { id: 'lhs', key: kl, ver: { value: kl, by: 'b less a times x' }, tags: K.tags(kl, [['signdrop', S(Q.add(Q.mul(sA, x0), sB))]]) }; })(), { id: 'dir', choices: DIR, key: 'ge', ver: { value: 'ge', by: 'divided by a negative, the sign turns' }, tags: [{ v: 'le', tag: 'signdrop' }] }, { id: 'x', key: kx, ver: { value: S(x2), by: 'everything to the other side first, then divided by a positive' }, tags: K.tags(kx, [['signdrop', S(Q.neg(x1))]]) }] }; }
+        boxes: [(function () { var x0 = P(w.sun.x0), kl = two('lhs', S(Q.add(Q.mul(Q.neg(sA), x0), sB)), S(Q.sub(sB, Q.mul(sA, x0)))); return { id: 'lhs', key: kl, ver: { value: kl, by: 'b less a times x' }, tags: K.tags(kl, [['signdrop', S(Q.add(Q.mul(sA, x0), sB))]]) }; })(), { id: 'dir', choices: DIR, key: 'ge', off: K.signOff('ge'), ver: { value: 'ge', by: 'divided by a negative, the sign turns' }, tags: [{ v: 'le', tag: 'signdrop' }] }, { id: 'x', key: kx, ver: { value: S(x2), by: 'everything to the other side first, then divided by a positive' }, tags: K.tags(kx, [['signdrop', S(Q.neg(x1))]]) }] }; }
     var s = w.sky, m1 = P(s.m1), b1 = P(s.b1), m2 = P(s.m2), b2 = P(s.b2), k = P(s.k), xc1 = Q.div(Q.sub(b2, b1), Q.sub(m1, m2)), xc2 = Q.div(Q.sub(b1, b2), Q.sub(m2, m1)), x = Q.of(0);
     var ptk = two('pt', [S(xc1), S(Q.add(Q.mul(m1, xc1), b1))], [S(xc2), S(Q.add(Q.mul(m2, xc2), b2))]), top = Q.add(Q.mul(m2, k), b2), bot = Q.add(Q.mul(m1, k), b1), base = Q.sub(top, bot), hgt = Q.sub(xc1, k);
     var ar1 = Q.div(Q.mul(base, hgt), Q.of(2)), ys = [P(ptk[1]), top, bot], xs = [xc1, k, k], ar2 = Q.of(0);
@@ -61717,7 +61788,7 @@ var H10 = (function () {
       source: 'Herodotus, Histories 2.109' },
     dress: { terrace: 'deep', motif: 'fields', names: {} }, reads: [], writes: [{ token: 'H10.plan', from: 'B.area' }], opensWhen: [], est: 15 };
   var parts = {
-    A: K.part({ role: 'spoke', spell: 'plan', working: 'scale', look: 'seal', instruments: ['ruler', 'scale'], full: ['R8', 'R7'], ideas: ['scale', 'units'], decisions: ['1 cm on the plan is n cm on the ground', 'cm to m'] }, { plen: bx('R8.3A', { word: 'The side on the plan', unit: 'cm', tol: '1/10', rep: 'tool' }), m: bx('R8.3A', { word: 'In metres', gate: true, unit: 'm' }) , k2: bx('R7.3A', { word: 'Times the area on the plan', gate: true }) }, 190),
+    A: K.part({ role: 'spoke', spell: 'plan', working: 'scale', look: 'seal', instruments: ['ruler', 'scale'], full: ['R8', 'R7'], ideas: ['scale', 'units'], decisions: ['1 cm on the plan is n cm on the ground', 'cm to m'] }, { plen: bx('R8.3A', { word: 'The side on the plan', unit: 'cm', tol: '1/10', rep: 'tool' }), m: bx('R8.3A', { word: 'In metres', gate: true, unit: 'm' }) , k2: bx('R7.3A', { off: { measure: 'relative' }, word: 'Times the area on the plan', gate: true }) }, 190),
     B: K.part({ role: 'spoke', spell: 'floor', working: 'plot', look: 'marks', instruments: ['decompose'], full: ['K4', 'M13', 'K9'], ideas: ['area'], decisions: ['cut the L into two rectangles'] }, { area: bx('K4.3A', { word: 'The area', gate: true, unit: 'm²' }) , wide: bx('M13.3A', { word: 'The second plot’s width', gate: true, unit: 'm' }), angs: bx('K9.3B', { word: 'The six inside angles together', gate: true, unit: '°' }) }, 220),
     C: K.part({ role: 'spoke', spell: 'floor', working: 'widen', look: 'seal', instruments: ['areamodel'], full: ['M12', 'E8'], ideas: ['area'], decisions: ['four rectangles in the area model'] }, { b: bx('M12.3B', { word: 'b', gate: true }), c: bx('M12.3B', { word: 'c', gate: true }), val: bx('M12.3B', { word: 'The value', gate: true, unit: 'm²' }) , grow: bx('E8.3C', { word: 'The area grows by', gate: true, unit: 'm²' }) }, 190),
     D: K.part({ role: 'spoke', spell: 'plan', working: 'area-scale', look: 'seal', instruments: ['scale'], full: ['K5'], ideas: ['scale', 'area'], decisions: ['areas scale by the square of the scale'] }, { m2: bx('K5.3A', { word: 'The ground', gate: true, unit: 'm²' }) }, 120),
@@ -61798,7 +61869,7 @@ var H11 = (function () {
   var parts = {
     P1: K.part({ spell: 'net', working: 'planks', look: 'net', instruments: ['net'], full: ['K7', 'K4'], ideas: ['area'], decisions: ['three pairs of faces'] }, { sa: bx('K7.3A', { word: 'The surface area', gate: true, unit: 'cm²' }) , sqm: bx('K4.3A', { word: 'In square metres', gate: true, unit: 'm²' }) }, 150),
     P2: K.part({ spell: 'vessel', working: 'hold', look: 'solid', instruments: ['layers'], full: ['K8', 'M5', 'R6'], ideas: ['area', 'units'], decisions: ['1 cm³ holds 1 mL; 1000 mL is 1 L'] }, { vol: bx('K8.3A', { word: 'The volume', gate: true, unit: 'cm³' }), litres: bx('K8.3A', { word: 'It holds', gate: true, unit: 'L' }) , least: bx('M5.3A', { word: 'The least whole height', gate: true, unit: 'cm' }), share: bx('R6.3A', { word: 'The provisions', gate: true, unit: 'cm³' }) }, 210),
-    P3: K.part({ spell: 'dilate', working: 'full-size', look: 'solid', instruments: ['3d'], full: ['R7'], ideas: ['scale'], decisions: ['areas by k², volumes by k³'] }, { area: bx('R7.3A', { word: 'Times the surface area', gate: true }), vol: bx('R7.3A', { word: 'Times the volume', gate: true }) }, 120),
+    P3: K.part({ spell: 'dilate', working: 'full-size', look: 'solid', instruments: ['3d'], full: ['R7'], ideas: ['scale'], decisions: ['areas by k², volumes by k³'] }, { area: bx('R7.3A', { off: { measure: 'relative' }, word: 'Times the surface area', gate: true }), vol: bx('R7.3A', { off: { measure: 'relative' }, word: 'Times the volume', gate: true }) }, 120),
     P4: K.part({ spell: 'net', working: 'open-box', look: 'net', instruments: ['net'], full: ['K7', 'M12'], support: ['M4'], ideas: ['area', 'bal'], decisions: ['the base once, the four walls as the perimeter times the height'] }, { h: bx('K7.3B', { word: 'The height', gate: true, unit: 'cm' }) , mb: bx('M12.3A', { word: 'The second base: b', gate: true }), mc: bx('M12.3A', { word: 'and c', gate: true }) }, 190),
     P5: K.part({ role: 'crown', tier: 4, spell: 'cylinder', working: 'jar', look: 'solid', instruments: ['3d'], support: ['K8', 'R2', 'M6'], ideas: ['area', 'tri'], decisions: ['πr²h', 'volume ÷ rate, rounded only at the end'] },
       { coef: bx('K8.3A', { word: 'The volume', tier: 4, unit: 'π cm³' }), min: bx('R2.4A', { word: 'The time to fill', crown: true, marks: 2, calc: 'basic', unit: 'min' }) }, 150)
@@ -61876,7 +61947,7 @@ var H12 = (function () {
     { id: 'two', label: 'Two different triangles' }, { id: 'many', label: 'Many different triangles' }];
   var parts = {
     A: K.part({ role: 'spoke', spell: 'weave', working: 'branch', look: 'numberline', instruments: ['rods', 'interval'], full: ['K6', 'M7'], support: ['M11'], ideas: ['line'], decisions: ['the third side is shorter than the other two together, longer than their difference'] },
-      { lo: bx('K6.4A', { word: 'lo', gate: true, unit: 'm' }), hi: bx('K6.4A', { word: 'hi', gate: true, unit: 'm' }) , most: bx('M7.3A', { word: 'The python’s longest whole length', gate: true, unit: 'm' }) }, 150),
+      { lo: bx('K6.4A', { word: 'lo', gate: true, unit: 'm' }), hi: bx('K6.4A', { word: 'hi', gate: true, unit: 'm' }) , most: bx('M7.3A', { word: 'The python’s longest whole length', gate: true, unit: 'm', off: { measure: 'count' } })   /* a whole number of metres: counted in whole steps, not as an amount */ }, 150),
     B: K.part({ role: 'spoke', spell: 'weave', working: 'rods', look: 'ring', instruments: ['compass', 'ruler'], full: ['K6'], ideas: ['line'], decisions: ['the two shorter rods against the longest', 'three sides fix one triangle'] },
       { tri: bx('K6.3A', { word: 'The triangle', gate: true, kind: 'choice' }), sum: bx('K6.3A', { word: 'The two shorter rods', gate: true, unit: 'cm' }) }, 120),
     C: K.part({ role: 'spoke', spell: 'dilate', working: 'pit', look: 'marks', instruments: ['ruler'], full: ['R8', 'K10', 'K5'], ideas: ['scale', 'tri'], decisions: ['each plan centimetre times the scale', 'a² + b² = c²'] },
@@ -61919,7 +61990,7 @@ var H12 = (function () {
       var c = Q.num(sorted[2]) < Q.num(s1) ? 'one' : Q.num(sorted[2]) === Q.num(s1) ? 'flat' : 'none';
       return { prompt: 'Ananse cuts three rods, ' + sh(r[0]) + ' cm, ' + sh(r[1]) + ' cm and ' + sh(r[2]) + ' cm long, and tries to make a triangle with them. How long are the two shorter rods together? Can he make a triangle, and is it the only one?',
         givens: { named: [named('rods', 'the three rods', w.rods.r)], draw: [], inst: { kind: 'rods', lengths: w.rods.r, unit: 'cm' } },
-        boxes: [{ id: 'tri', choices: CH, key: c, ver: { value: c, by: 'the longest rod laid against the other two' }, tags: [{ v: c === 'one' ? 'many' : 'one', tag: 'oneplace' }] }, { id: 'sum', key: ks, ver: { value: S(s2), by: 'all three less the longest' }, tags: K.tags(ks, [['totalgain', S(Q.add(s1, sorted[2]))]]) }] }; }
+        boxes: [{ id: 'tri', choices: CH, key: c, off: c === 'one' ? { fizzleAt: ['many', 'two'], backfireAt: ['none', 'flat'] } : { fizzleAt: [c === 'flat' ? 'none' : 'flat'], backfireAt: ['one', 'two', 'many'] }, ver: { value: c, by: 'the longest rod laid against the other two' }, tags: [{ v: c === 'one' ? 'many' : 'one', tag: 'oneplace' }] }, { id: 'sum', key: ks, ver: { value: S(s2), by: 'all three less the longest' }, tags: K.tags(ks, [['totalgain', S(Q.add(s1, sorted[2]))]]) }] }; }
     if (pid === 'C') { var a = P(w.pit.a), b = P(w.pit.b), sc = P(w.pit.s), c0 = Q.sqrt(Q.add(Q.mul(a, a), Q.mul(b, b))), lg = two('long', S(Q.mul(b, sc)), S(Q.mul(sc, b))), d1 = Q.mul(c0, sc), A = Q.mul(a, sc), B = Q.mul(b, sc), dg = two('diag', S(d1), S(Q.sqrt(Q.add(Q.mul(A, A), Q.mul(B, B)))));
       var cfg = { parts: [{ kind: 'rect', x: 0, y: 0, w: Q.num(b), h: Q.num(a) }], gridCm: 1, unit: 'cm', grad: 'mm', ask: { from: [0, Q.num(a)], to: [Q.num(b), Q.num(a)], name: 'the longer side' }, caption: 'The floor of the pit on the plan. Lay the ruler along its longer side and read it.' };
       return { prompt: 'Ananse digs a pit for Osebo the leopard. On the plan its floor is a rectangle ' + sh(a) + ' cm wide, and 1 cm on the plan stands for ' + sh(sc) + ' m. Measure the longer side of the floor on the plan with the ruler. How long is that side of the pit, in metres? How long is the diagonal of the floor, in metres?',
@@ -62015,7 +62086,7 @@ var H13 = (function () {
     var map = {}; d.base.boxes.forEach(function (b, i) { map[b.id] = part._ids[i]; });
     var g = givensOf(d.v.givens); (g.casts || []).forEach(function (c) { c.box = map[c.box] || c.box; });
     return { world: { from: d.base.id }, prompt: 'Rhadamanthus asks. ' + d.v.prompt, givens: g,
-      boxes: d.v.boxes.map(function (b) { var o = { id: map[b.id], key: b.key, ver: b.ver, tags: b.tags || [] }; if (b.choices) o.choices = b.choices; if (b.own) o.own = { of: map[b.own.of], op: b.own.op, by: b.own.by }; else o.own = null; return o; }) };
+      boxes: d.v.boxes.map(function (b) { var o = { id: map[b.id], key: b.key, ver: b.ver, tags: b.tags || [] }; if (b.choices) o.choices = b.choices; if (b.off) o.off = b.off; if (b.own) o.own = { of: map[b.own.of], op: b.own.op, by: b.own.by }; else o.own = null; return o; }) };
   }
   function hubParts(seed, skein, rnd) {
     var X = P(skein['H1.exitX']), Tt = P(skein['H2.thoth']), O = skein['H4.O'].map(P), ar = skein['H4.arrow'], m = P(ar.m), b = P(ar.b), h = P(skein['H7.band']);
@@ -62230,10 +62301,11 @@ var AUDIENCE = (function () {
   function envelope(au, givens, now) { var pl = place(au); if (!pl) throw new Error('AUDIENCE.envelope: nothing to cast'); var p = variant(au, pl);
     return { v: 1, id: au.id + '-' + pl.casting, t: now, attempt: au.attempt, surface: 'audience', hall: 'H13', part: 'Q1', spell: p.spell, working: p.working, casting: pl.casting, practice: false, linkedTo: null, world: pl.casting === 'second' ? 'twin' : 'a', seed: au.seed, reads: [], redealtFrom: null,
       boxes: p.boxes.map(function (b) { return { id: b.id, given: givens[b.id] === undefined ? null : givens[b.id], t: now, ms: 0, nudges: 0, calcUsed: false, help: false, marks: b.marks, tier: b.tier, gate: b.gate, terr: b.terr, skills: b.skills.slice(), from: b.from, est: 60 }; }) }; }
-  function commit(au, rec) { var pl = place(au); if (!pl || rec.casting !== pl.casting) throw new Error('AUDIENCE.commit: not the casting that is open');
+  function commit(au, rec) { var pl = place(au), kd = pl ? keyed(au) : null; if (!pl || rec.casting !== pl.casting) throw new Error('AUDIENCE.commit: not the casting that is open');
     rec.boxes.forEach(function (b) { if (typeof b.credit !== 'number' || b.key !== undefined) throw new Error('AUDIENCE.commit: a scored record, never a key'); });
     au.records.push(rec); if (!place(au)) { var f = au.records[0], s = au.records[1]; au.outcome = f.verdict === 'held' ? 'held' : s && s.verdict === 'held' ? 'held2' : 'notyet'; au.status = 'spent'; }
-    return { spent: au.status === 'spent', outcome: au.outcome }; }
+    var oc = M().outcome ? M().outcome(rec, kd, { committed: true, casting: rec.casting }) : null;
+    return { spent: au.status === 'spent', outcome: au.outcome, cast: oc && oc.id ? { id: oc.id, why: oc.why } : null }; }   // cast: casting words (POLICY §1l.4); outcome: the record's held / held2 / not yet
   function standing(a, audiences) {
     var asks = a.judgement.asks.map(function (q) { return { terr: q.terr, outcome: q.outcome }; });
     (audiences || []).forEach(function (au) { if (au.attempt === a.id && au.status === 'spent' && au.outcome !== 'notyet') asks.push({ terr: au.terr, outcome: au.outcome }); });
@@ -62374,9 +62446,9 @@ var REHEARSAL = (function () {
   function envelope(s, givens, now) { var pl = place(s); if (!pl) throw new Error('REHEARSAL.envelope: nothing to cast'); var p = variant(s, pl);
     return { v: 1, id: s.id + '-' + p.id + '-' + pl.casting, t: now, session: s.id, surface: 'rehearsal', hall: s.hall, part: p.id, spell: p.spell, working: p.working, casting: pl.casting, practice: false, linkedTo: null, world: pl.casting === 'second' ? 'twin' : 'a', seed: s.seed, reads: [], redealtFrom: null,
       boxes: p.boxes.map(function (b) { return { id: b.id, given: givens[b.id] === undefined ? null : givens[b.id], t: now, ms: 0, nudges: 0, calcUsed: false, help: false, marks: b.marks, tier: b.tier, gate: b.gate, terr: b.terr, skills: b.skills.slice(), from: b.from, est: Math.round(p.est / p.boxes.length) }; }) }; }
-  function commit(s, rec) { var pl = place(s); if (!pl || rec.part !== pl.part.id || rec.casting !== pl.casting) throw new Error('REHEARSAL.commit: not the casting that is open');
+  function commit(s, rec) { var pl = place(s), kd = pl ? keyed(s) : null; if (!pl || rec.part !== pl.part.id || rec.casting !== pl.casting) throw new Error('REHEARSAL.commit: not the casting that is open');
     rec.boxes.forEach(function (b) { if (typeof b.credit !== 'number' || b.key !== undefined) throw new Error('REHEARSAL.commit: a scored record, never a key'); });
-    s.records.push(rec); var out = { spent: false, seal: null }; if (!place(s)) { var r = result(s); s.status = 'spent'; s.seal = r.seal; out.spent = true; out.seal = r.seal; out.result = r; } return out; }
+    s.records.push(rec); var M = G.MEASURE || require('../measure.js'), oc = M.outcome ? M.outcome(rec, kd, { committed: true, casting: rec.casting }) : null; var out = { spent: false, seal: null, outcome: oc && oc.id ? { id: oc.id, why: oc.why } : null };   /* casting words for the cast (POLICY §1l.4); the seal keeps its own */ if (!place(s)) { var r = result(s); s.status = 'spent'; s.seal = r.seal; out.spent = true; out.seal = r.seal; out.result = r; } return out; }
   function result(s) { var inst = deal(s), marks = 0, max = 0, gold = true;
     inst.parts.forEach(function (p) { p.boxes.forEach(function (b) { var best = 0, first = null; s.records.forEach(function (r) { if (r.part !== p.id) return; r.boxes.forEach(function (x) { if (x.id === b.id) { if (x.credit > best) best = x.credit; if (r.casting === 'first') first = x.state; } }); }); max += b.marks; marks += b.marks * best; if (first !== 'held') gold = false; }); });
     var pct = max ? marks / max : 0; return { hall: s.hall, marks: Math.round(marks * 1000) / 1000, max: max, pct: pct, seal: gold ? 'gold' : pct >= 0.7 - 1e-12 ? 'sealed' : 'open' }; }
@@ -62428,7 +62500,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
       Field: { update: '(view: MapView) → void', walk: '(hallId) → Promise', seal: '(hallId, "held"|"held2"|"lent") → Promise', rankUp: '(rank: prime 2–23, title?) → Promise  (M2: the level-up ceremony)', judgement: '({ orb?: "lit"|"radiant", stars?: [41 bool], seat?: bool, …Line? }) → Promise  (M4: the orb kindles, the stars come out, the seat forms)', kindle: '(orb, line?) → Promise', starsOut: '([41 bool], line?) → Promise', seatForms: '(line?) → Promise', ceremony: '(change: C\u2019s MAGE_LEVELS.change(prev, next) | null) → Promise  (rank: each prime won lights in turn; level: the level moves; degree, null: nothing on the field)', face: '(hallId) → Promise', view: '() → MapView', select: '(kind, id) → void', listText: '() → string[]', canvasText: '() → string[]', destroy: '() → void' }
     },
     STAGE: {                        // kit/stage.js (M1; next and focus M2)
-      mount: '(host: Element, { kicker?, prompt, look: "beam"|"seal"|…, plane?, boxes: [{ id, before?, aria? }] | [{ id, choices: [{ id, label }] (select-all: at least 5 in a Hall), aria? }], mode?: "tg"|"hall", again?: boolean, score(values, casting) → { verdict } | { verdict: "nudge", nudge: [boxId] } | Promise (or throws Error("nudge") with .nudge), onSettled?, onNudge? }) → Stage   // a nudge: the stage\u2019s own calm line, the boxes open, nothing counted (M4)',
+      mount: '(host: Element, { kicker?, prompt, look: "beam"|"seal"|…, plane?, boxes: [{ id, before?, aria? }] | [{ id, choices: [{ id, label }] (select-all: at least 5 in a Hall), aria? }], mode?: "tg"|"hall", again?: boolean, score(values, casting) → { verdict } | { verdict: "nudge", nudge: [boxId] } | Promise (or throws Error("nudge") with .nudge), whole?: boolean (true: a whole-spell cast; false, or unset outside mode "hall": skill words; unset in a Hall: held / not yet until the caller passes true. A whole-spell cast: score may return { verdict, outcome: C\u2019s MEASURE.outcome }, named in casting words with SPELLCRAFT.CAST_WORDS. Not whole (a rune step, Bench, Drill, Warm): skill words, "Exact." or "Not exact yet." naming the box off from score\u2019s boxes or off: [ids]), onSettled?({ casting, verdict, outcome, why, values, … }), onNudge? }) → Stage   // a nudge: the stage\u2019s own calm line, the boxes open, nothing counted (M4)',
       Stage: { next: '({ prompt, kicker?, plane?, boxes?, score, again? }) → void   (score gets { [box.id]: typed string } or, for select-all, { [box.id]: [chosen ids] })', focus: '() → void', state: '() → { casts, usedAgain, busy, compare }', destroy: '() → void' }
     },
     MMPlan: {                       // kit/looks.js (M2.5): the Hall plan for every look (POLICY §1f), and the spell first (§1g)
@@ -62655,6 +62727,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
       t('kit/stage.js has the select-all look, and a Hall refuses fewer than five choices (S\u2019s ruling)', !!stg && /function selBox/.test(stg) && /mode === 'hall' \? 5 : 2/.test(stg));
       t('kit/gauges.js has the compact Halls strip (M2)', !!g && /compact/.test(g));
       t('kit/spellcraft.js publishes LOOKS and classify', !!spc && /LOOKS: LOOKS/.test(spc) && /classify: classify/.test(spc));
+      t('SPELLCRAFT.CAST_WORDS: the four outcomes, each a word and a symbol (POLICY §1l: \u2726 True cast, \u223f Fizzle, \u21af Misfire, \u27f2 Backfire), and the stage names a whole cast by them', !!spc && /'true': \{ word: 'True cast', sym: '\u2726' \}/.test(spc) && /fizzle: \{ word: 'Fizzle', sym: '\u223f' \}/.test(spc) && /misfire: \{ word: 'Misfire', sym: '\u21af' \}/.test(spc) && /backfire: \{ word: 'Backfire', sym: '\u27f2' \}/.test(spc) && /var oc = whole && res && res\.outcome/.test(stg) && /'Not exact yet\.'/.test(stg));
       var crd = src('cards.js'); t('kit/cards.js publishes MMCard (list, one, badge, rowText), refuses a key, and draws its still with final() (POLICY §1j)', !!crd && /G\.MMCard = api/.test(crd) && /list: list, one: one, badge: badge/.test(crd) && /a key may never reach a card/.test(crd) && /surf\.final\(/.test(crd) && !/surf\.play\(/.test(crd));
       var OWN = ['tokens.css', 'stage.css', 'fonts.css', 'gauges.js', 'cast.js', 'field.js', 'scenes.js', 'glyph.js', 'stage.js', 'spellcraft.js', 'looks.js', 'obscuratum.js', 'duel_link.js', 'instruments.js'];
       var AVOID = /\b(tlachtli|pitz|xibalba|nahua|nahuatl|sensei|teotlachtli)\b/i, RUNIC = /[ᚠ-᛿]/, MARTIAL = /\b(dojo|sensei|belts?|kata|karate|judo|ninja|samurai|martial|sparring|spar|black belt|mathjitsu)\b/i;
@@ -62791,7 +62864,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
     console.log((fails ? 'FAILED ' : 'OK ') + (n - fails) + ' of ' + n + ' spellcraft tests passed (kit/spellcraft.js)');
     return !fails;
   }
-  return { version: '1.0.0', LOOKS: LOOKS, lookFor: lookFor, classify: classify, _selfTest: selfTest };
+  /* POLICY §1l.4: one set of casting words for every whole-spell cast (the duel, the Training Ground's whole casts, the Halls).
+     E's words and symbols, the same in the hub and the duel; the symbol never stands alone. C's MEASURE.outcome gives the id. */
+  var CAST_WORDS = { 'true': { word: 'True cast', sym: '✦' }, fizzle: { word: 'Fizzle', sym: '∿' }, misfire: { word: 'Misfire', sym: '↯' }, backfire: { word: 'Backfire', sym: '⟲' } };
+  return { version: '1.1.0', LOOKS: LOOKS, lookFor: lookFor, classify: classify, CAST_WORDS: CAST_WORDS, _selfTest: selfTest };
 });
 
 /* --- mage: kit/gauges.js --- */
@@ -63279,7 +63355,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
     var NSE = { 'vector-effect': 'non-scaling-stroke' };
     function ns(a) { for (var k in NSE) a[k] = NSE[k]; return a; }
     var Lframe = el('g', null, svg), Lminor = el('g', { stroke: 'rgba(205,170,120,.10)' }, svg), Lmajor = el('g', { stroke: 'rgba(215,185,140,.20)' }, svg), Laxis = el('g', { stroke: 'rgba(230,212,180,.5)' }, svg);
-    var Lticks = el('g', { fill: '#8d95a8', 'font-family': 'Inter, system-ui, sans-serif' }, svg), Litems = el('g', null, svg), Lghost = el('g', null, svg), Lcast = el('g', null, svg), Lfx = el('g', null, svg), Llab = el('g', null, svg), Lscale = el('g', null, svg);
+    var Lticks = el('g', { fill: '#8d95a8', 'font-family': 'Inter, system-ui, sans-serif' }, svg), Litems = el('g', null, svg), Lghost = el('g', null, svg), Lcast = el('g', { class: 'mp-cast' }, svg), Lfx = el('g', null, svg), Llab = el('g', null, svg), Lscale = el('g', null, svg);
     var flash = document.createElement('div'); flash.className = 'mm-plan-flash'; wrap.appendChild(flash);
     var W = 400, H = 300, upp = .05, view = null, raf = 0, cur = null, ghost = null, drawn = [];
     var maps = [], items = [], frame = null, E0 = null, NL = false;
@@ -64218,6 +64294,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
   var uid = 0;
 
   function sealSVG() { return '<svg class="mm-seal" viewBox="0 0 120 120" role="img" aria-label="The seal: open"><circle class="trk" cx="60" cy="60" r="42"/><circle class="arc" cx="60" cy="60" r="42" pathLength="100" stroke-dasharray="72 100" transform="rotate(-90 60 60)"/><circle class="core" cx="60" cy="60" r="0"/><circle class="burst" cx="60" cy="60" r="42"/></svg>'; }
+  var OCS = ['true', 'fizzle', 'misfire', 'backfire'];
   function playSeal(svg, held) { svg.classList.remove('held', 'notyet'); void svg.getBoundingClientRect(); svg.classList.add(held ? 'held' : 'notyet');
     svg.setAttribute('aria-label', held ? 'The seal: closed, held' : 'The seal: still open, not yet');
     return new Promise(function (res) { setTimeout(res, reduced() ? 0 : 900); }); }
@@ -64237,7 +64314,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
     host.innerHTML = '<div class="mm-stage mm-night" data-look="' + look + '"><p class="mm-kicker">' + esc(o.kicker || '') + '</p><p class="mm-stage-prompt">' + (o.prompt || '') + '</p>' +
       '<div class="mm-stage-boxes">' + boxesHTML() + '</div><p class="mm-stage-err" role="alert"></p><p class="mm-stage-nudge" role="status" id="' + id + 'nudge"></p>' +
       '<div class="mm-stage-cmp" hidden><span class="mm-kicker">Compare</span><div class="mm-seg" role="group" aria-label="How to compare the two casts"><button type="button" data-cmp="overlay" aria-pressed="true">Overlaid</button><button type="button" data-cmp="side" aria-pressed="false">Side by side</button></div></div>' +
-      '<div class="mm-stage-world mm-cast"></div><div class="mm-stage-words"></div><span class="mm-cast-chip"><i></i><span data-k="chip">The floor</span></span><p class="mm-cast-cap" aria-live="polite">Only the givens are drawn. Nothing appears before Cast.</p><p class="mm-cast-cmp" hidden></p><div class="mm-stage-acts"></div></div>';
+      '<div class="mm-stage-world mm-cast"></div><div class="mm-stage-words"></div><span class="mm-cast-chip"><i></i><span class="mm-oc-sym" aria-hidden="true"></span><span data-k="chip">The floor</span></span><p class="mm-cast-cap" aria-live="polite">Only the givens are drawn. Nothing appears before Cast.</p><p class="mm-cast-cmp" hidden></p><div class="mm-stage-acts"></div></div>';
     var root = host.firstChild, world = root.querySelector('.mm-stage-world'), err = root.querySelector('.mm-stage-err'), cap = root.querySelector('.mm-cast-cap'), chipEl = root.querySelector('.mm-cast-chip'), cmpP = root.querySelector('.mm-cast-cmp'), nudgeP = root.querySelector('.mm-stage-nudge'), acts = root.querySelector('.mm-stage-acts');
     function boxesHTML() { var cb = '<button class="mm-btn primary" type="button" data-act="cast">Cast</button>';
       if (sel) return '<fieldset class="mm-stage-sel"><legend class="mm-sr">' + esc(sel.aria || 'Choose every one that fits') + '</legend>' + sel.choices.map(function (c, i) { return '<label class="mm-sel-c" for="' + id + 'c' + i + '"><input type="checkbox" id="' + id + 'c' + i + '" data-choice="' + esc(c.id) + '"><span class="math">' + esc(c.label) + '</span></label>'; }).join('') + '</fieldset>' + cb;
@@ -64256,7 +64333,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
       if (look !== 'beam') { world.innerHTML = sealSVG(); return; }
       if (casts.length > 1 && cmp === 'side') pair = MMCast.pair(world, o.plane); else plane = MMCast.mount(world, o.plane); }
     function redraw() { if (mplan || look !== 'beam' || !casts.length) return; var a = casts[casts.length - 2], b = casts[casts.length - 1]; if (pair) { pair.a.final(a, { extra: b }); pair.b.final(b, { extra: a }); } else plane.final(b, { ghost: a || null }); }
-    function setChip(text, cls) { chipEl.className = 'mm-cast-chip' + (cls ? ' ' + cls : ''); q('[data-k="chip"]').textContent = text; }
+    function setChip(text, cls, sym) { chipEl.className = 'mm-cast-chip' + (cls ? ' ' + cls : ''); q('[data-k="chip"]').textContent = text; q('.mm-oc-sym').textContent = sym || ''; }
     function lock(on) { inputs().forEach(function (i) { i.disabled = on; }); [].forEach.call(root.querySelectorAll('[data-opt]'), function (i) { i.disabled = on; }); q('[data-act="cast"]').disabled = on; }
     function showActs() { acts.innerHTML = canAgain && casts.length === 1 && !usedAgain ? '<button class="mm-btn" type="button" data-act="again">Cast again · same numbers</button>' : ''; }
     function cast() {
@@ -64269,12 +64346,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
       var missing = null; if (!sel) [].forEach.call(root.querySelectorAll('[data-opts]'), function (f) { var k = f.getAttribute('data-opts'), c = f.querySelector('input:checked'); if (c) vals[k] = c.value; else { bad = 'opt'; missing = missing || f; } });
       if (bad === 'opt') { err.textContent = missing && missing.classList.contains('wide') ? 'Choose one.' : 'Choose one of the signs.'; return; }
       if (bad) { err.textContent = 'Type a number or a fraction in each box, such as 3/4, −2 or 36π.'; return; }
-      var chip0 = { cls: chipEl.className, text: q('[data-k="chip"]').textContent, cap: cap.textContent };
+      var chip0 = { cls: chipEl.className, text: q('[data-k="chip"]').textContent, cap: cap.textContent, sym: q('.mm-oc-sym').textContent };
       err.textContent = ''; nudgeP.textContent = ''; [].forEach.call(root.querySelectorAll('input.nudged'), function (i) { i.classList.remove('nudged'); i.removeAttribute('aria-describedby'); });
       busy = true; lock(true); var casting = casts.length ? 'again' : 'first'; setChip('Casting'); cap.textContent = '';
       /* C's nudge (MEASURE.scoreCast: a measured reading one mark past its tolerance): a calm line, the boxes open, nothing kept,
          nothing counted, no onSettled. The nudged boxes are marked and the first takes the focus. */
-      function nudged(ids) { busy = false; lock(false); chipEl.className = chip0.cls; q('[data-k="chip"]').textContent = chip0.text; cap.textContent = chip0.cap;
+      function nudged(ids) { busy = false; lock(false); chipEl.className = chip0.cls; q('[data-k="chip"]').textContent = chip0.text; q('.mm-oc-sym').textContent = chip0.sym; cap.textContent = chip0.cap;
         nudgeP.textContent = 'Check your reading and cast again. Nothing is spent yet.'; var first = null;
         (ids || []).forEach(function (bid) { var i = root.querySelector('input[data-box="' + bid + '"]'); if (i) { i.classList.add('nudged'); i.setAttribute('aria-describedby', nudgeP.id); first = first || i; } });
         if (first && first.focus) first.focus(); if (o.onNudge) o.onNudge({ casting: casting, boxes: ids || [], values: vals }); }
@@ -64288,20 +64365,40 @@ if (typeof module !== 'undefined' && module.exports) module.exports = REHEARSAL;
           eff = SPELLCRAFT.classify({ look: look, form: { m: c.m, b: c.b }, givens: { F: o.plane.F, L: o.plane.L }, verdict: verdict }); }
         else if (sel) { var pl = sel.choices.filter(function (x) { return picked.indexOf(x.id) >= 0; }).map(function (x) { return x.label; }); c = { txt: pl.length > 1 ? pl.slice(0, -1).join(', ') + ' and ' + pl[pl.length - 1] : pl[0], verdict: verdict }; eff = SPELLCRAFT.classify({ look: look, form: { value: c.txt }, givens: {}, verdict: verdict }); }
         else { c = { txt: boxes.map(function (b) { return vals[b.id]; }).join(', '), verdict: verdict }; eff = SPELLCRAFT.classify({ look: look, form: { value: vals[boxes[0].id] }, givens: {}, verdict: verdict }); }
+        /* POLICY §1l.4-5: a whole-spell cast (mounted with whole: true) is named by C's outcome (res.outcome from MEASURE.outcome):
+           a true cast, a fizzle, a misfire or a backfire, with its reason; held or not yet stays underneath (the seal, onSettled).
+           A rune step or a drill is never mounted whole, so it keeps its skill words. */
+        /* whole: true names the cast in casting words; whole: false, or a Training Ground stage that does not say, speaks of precision
+           (a rune step, Bench, Drill, Warm); a Hall stage that does not say keeps held / not yet until its caller passes whole: true */
+        var whole = o.whole === true, skill = o.whole === false || (o.whole == null && o.mode !== 'hall');
+        var oc = whole && res && res.outcome && res.outcome.id && G.SPELLCRAFT.CAST_WORDS[res.outcome.id] ? res.outcome : null; c.oc = oc;
+        /* a rune step or a drill (not whole) speaks of precision (POLICY §1l.5): "Exact." or "Not exact yet.", naming the answer that
+           was off when the score says which (C's scoreCast boxes, or res.off: [box ids]) */
+        var offIds = !res ? [] : res.off ? [].concat(res.off) : (res.boxes || []).filter(function (b) { return b && b.state && b.state !== 'held' && b.state !== 'held2'; }).map(function (b) { return b.id; });
+        var offWords = []; offIds.forEach(function (id) { boxes.forEach(function (bx) { if (bx.id === id || String(bx.id).indexOf(id + '.') === 0 || String(bx.id).split('.').pop() === id) { var w = String(bx.word || bx.before || bx.aria || bx.id).replace(/[\s=:?]+$/, '').trim(); if (w && offWords.indexOf(w) < 0) offWords.push(w); } }); });
+        OCS.forEach(function (k) { world.classList.remove('oc-' + k); }); [].forEach.call(world.querySelectorAll('.mm-seal'), function (sv) { OCS.forEach(function (k) { sv.classList.remove('oc-' + k); }); });
         var prev = casts[casts.length - 1] || null; casts.push(c);
         if (mplan) { var sv = world.querySelector('.mm-sealmark .mm-seal'); run = Promise.all([mplan.play(vals, verdict, { ghost: prev ? prev.vals : null }), new Promise(function (r) { setTimeout(r, reduced() ? 0 : 1300); }).then(function () { return playSeal(sv, verdict === 'held'); })]); }
         else if (look === 'beam') { if (casts.length === 2 && cmp === 'side') build(); run = pair ? (pair.a.final(prev, { extra: c }), pair.b.play(c, { extra: prev })) : plane.play(c, { ghost: prev }); }
         else run = playSeal(world.querySelector('.mm-seal'), verdict === 'held');
         return run.then(function () {
           if (dead) return; var held = verdict === 'held';
+          if (oc) { world.classList.add('oc-' + oc.id); [].forEach.call(world.querySelectorAll('.mm-seal'), function (sv) { sv.classList.add('oc-' + oc.id); }); }   // the outcome's own motion, after the trace lands
           if (mplan) { cap.textContent = (held ? 'Held. ' : 'Not yet. ') + c.txt; if (prev) { cmpP.hidden = false; cmpP.textContent = 'Your first cast, kept as a faint trace: ' + prev.txt; } }
           else if (look === 'beam') { var cp = MMCast.caption(c, pair ? pair.b : plane); cap.innerHTML = eff.detail === 'form' ? 'Not yet. Your beam <span class="math">' + esc(c.txt) + '</span> runs where it should; write it in the form asked.' : cp.html;
             if (prev) { cmpP.hidden = false; cmpP.innerHTML = MMCast.compare(prev, c, pair ? pair.b : plane); q('.mm-stage-cmp').hidden = false; } }
           else if (sel) cap.textContent = held ? 'Held. You chose ' + c.txt + ', and the seal closes.' : 'Not yet. You chose ' + c.txt + ', and the seal stays open.';
           else cap.textContent = held ? 'Held. ' + c.txt + ' closes the seal.' : 'Not yet. ' + c.txt + ' leaves the seal open.';
-          setChip(casting === 'again' ? 'Again: ' + (held ? 'held (practice)' : 'not yet') : eff.chip, held ? 'held' : 'notyet');
+          if (oc) { var W = G.SPELLCRAFT.CAST_WORDS[oc.id], why = String(oc.why || '').replace(new RegExp('^(A\\s+)?' + W.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[:.]?\\s*', 'i'), ''), lead = W.word + '.' + (why ? ' ' + why.charAt(0).toUpperCase() + why.slice(1) : '');   // "True cast. Every answer is right." (never the word twice)
+            if (look === 'beam' && !mplan) cap.innerHTML = esc(lead) + ' ' + cap.innerHTML.replace(/^(Held|Not yet)\.\s*/, '');
+            else cap.textContent = lead + ' ' + cap.textContent.replace(/^(Held|Not yet)\.\s*/, '');
+            setChip((casting === 'again' ? 'Again: ' : '') + W.word + (casting === 'again' ? ' (practice)' : ''), 'oc oc-' + oc.id + ' ' + (held ? 'held' : 'notyet'), W.sym); }
+          else if (skill) { var sk = held ? 'Exact.' : 'Not exact yet.' + (offWords.length ? ' ' + offWords.join(' and ') + (offWords.length > 1 ? ' were' : ' was') + ' not exact.' : '');
+            if (look === 'beam' && !mplan) cap.innerHTML = esc(sk) + ' ' + cap.innerHTML.replace(/^(Held|Not yet)\.\s*/, ''); else cap.textContent = sk + ' ' + cap.textContent.replace(/^(Held|Not yet)\.\s*/, '');
+            setChip(casting === 'again' ? 'Again: ' + (held ? 'exact (practice)' : 'not exact yet') : held ? 'Exact' : 'Not exact yet', held ? 'held' : 'notyet'); }
+          else setChip(casting === 'again' ? 'Again: ' + (held ? 'held (practice)' : 'not yet') : eff.chip, held ? 'held' : 'notyet');
           busy = false; showActs();
-          if (o.onSettled) o.onSettled({ casting: casting, verdict: verdict, effect: eff.effect, detail: eff.detail, values: vals });
+          if (o.onSettled) o.onSettled({ casting: casting, verdict: verdict, effect: eff.effect, detail: eff.detail, values: vals, outcome: oc ? oc.id : null, why: oc ? oc.why : null });
         });
       }).catch(function (e) { if (e && e.message === 'nudge') { nudged(e.nudge); return; }   // a Hall screen that throws its nudge is met the same way
         busy = false; lock(false); err.textContent = 'The cast could not be scored. Try again.'; if (G.console) G.console.error(e); });
@@ -65170,7 +65267,7 @@ var HALL_UI = (function () {
           else boxes.push({ id: b.id, before: (b.word || BOXWORD[b.id] || b.id) + (b.unit ? ' (' + (UNITWORD[b.unit] || b.unit) + ')' : ''), aria: b.word || BOXWORD[b.id] || b.id });
         });
         if (look === 'beam') plane = planeOf(v.scene);
-        stage = STAGE.mount(host2, { kicker: v.casting === 'second' ? 'Second casting' : 'Cast', prompt: esc(v.prompt), look: look, plane: plane, plan: typeof MMPlan !== 'undefined' && !v.inst ? v.draw : undefined, inst: v.inst || undefined, boxes: boxes, mode: 'hall',
+        stage = STAGE.mount(host2, { whole: true, kicker: v.casting === 'second' ? 'Second casting' : 'Cast', prompt: esc(v.prompt), look: look, plane: plane, plan: typeof MMPlan !== 'undefined' && !v.inst ? v.draw : undefined, inst: v.inst || undefined, boxes: boxes, mode: 'hall',
           score: function (vals) { return castNow(id, v, toGivens(v, vals)); }, onSettled: settled });
       }
       main.onclick = function (e) { var b = e.target.closest('[data-act]'); if (!b) return;
@@ -65240,8 +65337,12 @@ var HALL_UI = (function () {
       var rec = HALLS.envelope(a, id, givens, t);
       rec.boxes.forEach(function (b) { var x = sc.boxes.filter(function (y) { return y.id === b.id; })[0]; b.state = x.state; b.credit = x.credit; b.tag = x.tag; b.ownOf = x.ownOf; });
       rec.verdict = sc.verdict; var out = HALLS.commit(a, rec, t); save();
+      // the cast's outcome in casting words (POLICY §1l.4): a true cast, a fizzle, a misfire or a backfire, named only after the commit;
+      // the record and the seal keep held, held on the second casting and lent (C's MEASURE.outcome changes no mark or evidence)
+      var oc = MEASURE.outcome ? MEASURE.outcome(rec, keyed, { committed: true, casting: v.casting, nudged: NUDGED[nk] || [] }) : null;
+      emit('outcome', { hall: id, part: v.part, casting: v.casting, outcome: oc ? oc.id : null });
       if (out.spent) emit('spent', { hall: id, seal: out.seal, wrote: out.wrote, opened: out.opened });
-      return { verdict: sc.verdict };
+      return { verdict: sc.verdict, outcome: oc && oc.id ? { id: oc.id, why: oc.why } : null };
     }
     // a select-all box: the choices as checkboxes (STAGE takes typed numbers only); the same order: commit, save, then show
     function selectStage(h, v, settled) {
@@ -65256,7 +65357,7 @@ var HALL_UI = (function () {
         var g = {}; g[b.id] = picked; var r = castNow(hallId, v, g), held = r.verdict === 'held';
         [].forEach.call(h.querySelectorAll('input'), function (i) { i.disabled = true; }); btn.disabled = true;
         var chip = h.querySelector('.mm-cast-chip'); chip.className = 'mm-cast-chip ' + (held ? 'held' : 'notyet'); h.querySelector('[data-k="chip"]').textContent = held ? 'Held' : 'Not yet';
-        h.querySelector('.mm-cast-cap').textContent = held ? 'Held. Every head you chose stands on the beam, and none you left does.' : 'Not yet. Your choice of heads does not match the beam.';
+        h.querySelector('.mm-cast-cap').textContent = held ? 'A true cast: every head you chose stands on the beam, and none you left does.' : (r.outcome && r.outcome.id === 'fizzle' ? 'A fizzle: ' : r.outcome && r.outcome.id === 'backfire' ? 'A backfire: ' : 'A misfire: ') + 'your choice of heads does not match the beam.';
         settled(r);
       };
     }
@@ -65357,7 +65458,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = HALL_UI;
      LAW     the normative formulas, small and exact. A module may be faster or richer, never different: test_contracts.js and
              the M1 tests check every module against LAW on the fixtures (mage/contracts/c_fixtures.js)
      SHAPES  one validator per contract value. validate(name, value) -> [] or a list of errors. An unnamed field is an error.
-   And the signature rule: MEASURE.scoreCast is the only function of any contract that takes a key (KEY_READERS, SIGNATURES).
+   And the signature rule: MEASURE.scoreCast and MEASURE.outcome (after the commit only) are the only functions of any contract that
+   take a key (KEY_READERS, SIGNATURES).
 
    Common interface (proposed for a.js, b.js, d.js so that contracts/index.js can aggregate them):
      { owner, version, SHAPES, validate(name, value), SIGNATURES, KEY_READERS, reads: { shapeName: [owners whose fixtures it reads] } }
@@ -65612,6 +65714,8 @@ var MAGE_CONTRACT_C = (function () {
   var SHAPES = {
     // C's fields of A's CastRecord box, and C's verdict (v2 §4.3)
     CastScoreBox: { id: 'str', state: STATE, credit: 'unit', tag: 'str?', ownOf: 'str?' },
+    // MEASURE.outcome (POLICY §1l): a committed whole-spell cast in casting words; null id only while it waits for its commit
+    CastOutcome: { id: ['enum', 'true', 'fizzle', 'misfire', 'backfire', null], why: 'str?', box: 'str?', by: 'str?', measure: 'str?', wrong: 'num?', wait: 'str?' },
     CastScore: { boxes: ['arr', null], verdict: ['enum', 'held', 'notyet', 'format', 'nudge', 'unlit'], nudge: function (v) { return v === undefined || Array.isArray(v) ? '' : 'nudge: the box ids to re-check'; } },
     HallResult: { hall: 'str', marks: 'num', max: 'num', pct: 'unit', seal: ['enum', 'gold', 'sealed', 'open'], terr: ['map', STATE], parts: ['map', STATE] },
     Gauges: { precision: 'unit?', recovery: 'unit?', sovereign: 'unit?', grit: 'unit?', adapt: 'unit?', tempo: ['or', { p: 'num', band: ['enum', 'brisk', 'steady', 'measured', 'long'] }, function (v) { return v === null ? '' : 'bad'; }], strength: 'num?', hold: 'unit?', wait: function (v) { return v === undefined || (v && typeof v === 'object') ? '' : 'wait is a map gauge -> reason'; } },
@@ -65659,7 +65763,8 @@ var MAGE_CONTRACT_C = (function () {
 
   // ------------------------------------------------------------------ signatures (the key rule) and who reads which fixture
   var SIGNATURES = {
-    'MEASURE.scoreCast': ['partDef', 'givens', 'ctx'],          // the only key reader: partDef carries the boxes' keys
+    'MEASURE.scoreCast': ['partDef', 'givens', 'ctx'],          // a key reader: partDef carries the boxes' keys
+    'MEASURE.outcome': ['cast', 'keyed', 'ctx'],               // the second key reader (POLICY §1l): how far off a COMMITTED cast is, in casting words
     'MEASURE.result': ['records', 'hallMeta'],
     'MEASURE.judgeAsks': ['records', 'opts'], 'MEASURE.laws': ['records', 'asks', 'orbHeld'], 'MEASURE.arenas': ['records', 'ext'], 'MEASURE.attemptResult': ['att', 'opts'], 'CODEX.fromRecord': ['getItem', 'cat', 'hub', 'opts'],
     'GAUGES.pace': ['ms', 'est'],                   // hallMeta: marks and gates only, never a key
@@ -65671,11 +65776,11 @@ var MAGE_CONTRACT_C = (function () {
     'LEVELS.T': ['L'], 'LEVELS.degree': ['L', 'n'], 'LEVELS.rankOf': ['history'], 'LEVELS.level': ['history', 'ledger'],
     'MAGE_OBS': ['getItem', 'cat', 'hub']
   };
-  var KEY_READERS = ['MEASURE.scoreCast'];
-  var KEY_PARAMS = ['key', 'keys', 'partDef', 'boxDef', 'instance', 'answer', 'trueForm'];
+  var KEY_READERS = ['MEASURE.scoreCast', 'MEASURE.outcome'];
+  var KEY_PARAMS = ['key', 'keys', 'keyed', 'partDef', 'boxDef', 'instance', 'answer', 'trueForm'];
   var reads = { CastScoreBox: ['A'], HallResult: ['A'], MageObs: ['C'], Gauges: ['B'], Stages: ['B', 'D'], CodexMetrics: ['D'], LevelReading: ['B', 'D'] };
 
-  return { owner: 'C', version: '1.5.0', K: K, LAW: LAW, SHAPES: SHAPES, validate: validate, check: validate, SIGNATURES: SIGNATURES, KEY_READERS: KEY_READERS, KEY_PARAMS: KEY_PARAMS, reads: reads, _typeErr: typeErr };
+  return { owner: 'C', version: '1.6.0', K: K, LAW: LAW, SHAPES: SHAPES, validate: validate, check: validate, SIGNATURES: SIGNATURES, KEY_READERS: KEY_READERS, KEY_PARAMS: KEY_PARAMS, reads: reads, _typeErr: typeErr };
 })();
 if (typeof module !== 'undefined') module.exports = MAGE_CONTRACT_C;
 else if (typeof self !== 'undefined') (self.MAGE_CONTRACTS = self.MAGE_CONTRACTS || {}).c = MAGE_CONTRACT_C;
@@ -65686,7 +65791,7 @@ else if (typeof self !== 'undefined') (self.MAGE_CONTRACTS = self.MAGE_CONTRACTS
    Synthesis v5 §12.2, v2 §4.4. Pure logic, no DOM, ES5. Browser global MEASURE; Node module. Loads after mage/contracts/c.js.
 
    MEASURE.scoreCast(partDef, givens, ctx) -> { boxes: [{ id, state, credit, tag, ownOf }], verdict }
-     THE ONLY FUNCTION IN THE MAGE CODE THAT READS A KEY. partDef is A's part (boxes with kind, key, own, tags); givens = { boxId: value };
+     ONE OF THE TWO FUNCTIONS IN THE MAGE CODE THAT READ A KEY (the other, MEASURE.outcome, only after the cast is committed). partDef is A's part (boxes with kind, key, own, tags); givens = { boxId: value };
      ctx = { casting: 'first' | 'second', only: [boxIds cast again] | null, equiv: function (kind, given, key) -> true | false | null }.
      It returns states and one verdict, never a distance, a ratio or the key (G2). The stage receives the verdict alone.
        state  held (first casting, exactly right) · held2 (second casting, exactly right) · own (wrong only because it follows the student's
@@ -65789,6 +65894,157 @@ var MEASURE = (function () {
     var held = out.length > 0 && out.every(function (x) { return x.state === 'held' || x.state === 'held2'; });
     return { boxes: out, verdict: held ? 'held' : 'notyet' };
   }
+
+  // ================================================================== the cast's outcome in casting words (POLICY §1l, rulings 1–5)
+  // MEASURE.outcome(cast, keyed [, ctx]) -> { id: 'true' | 'fizzle' | 'misfire' | 'backfire', why, box, by, measure, wrong } | null
+  //   The second key reader (KEY_READERS): it measures HOW FAR OFF a committed whole-spell cast is, box by box, by the mathematics of
+  //   the box, and names the cast by its worst box. It changes nothing underneath: states, credit, evidence, gauges, held / held2 / lent
+  //   are scoreCast's and MEASURE.result's, as before. Words only; any cost is the duel's own, never here.
+  //   cast  = the committed CastRecord (boxes [{ id, given, state? }]) or { givens } ; a box with no state is scored here by scoreCast,
+  //           so the outcome and the states can never disagree: a cast whose boxes are all held or held2 is ALWAYS 'true' (True cast).
+  //   keyed = the part with its keys (A's PartDef, D2's MAGE_GENS part, a charge's part); only the cast's boxes are read.
+  //   ctx   = { committed: true, casting, nudged, equiv } — committed must be true (or cast.committed): before the cast is committed
+  //           the function returns { id: null, why: null, wait: 'commit' } and reads nothing, so it can never serve as an oracle.
+  //   A nudge has no outcome (null): nothing was spent; the nudge stays a nudge.
+  //   THE DUEL'S TABLE (E, elysium/obscuratum/E/DESIGN.md §1c; OBX.howFar), one measure per box, the same cast the same name:
+  //     grid      points, rows, heights, coordinates     off by ≤ 1/2 fizzle · ≤ 3 misfire · further backfire
+  //     fine      slopes, starts, solutions             off by ≤ 1/4 fizzle · ≤ 3/2 misfire · further backfire
+  //     count     whole numbers                         off by 1 fizzle · 2 to 6 misfire · further backfire
+  //     relative  amounts (areas, radii, percents, …)   ≤ 10% fizzle · ≤ 100% (as far as double, or down to nothing) misfire · beyond
+  //               backfire; a key of 0 is measured fine
+  //     set       a selection: all chosen right but some left out fizzle · some wrong, no more wrong than right misfire · more wrong
+  //               than right, or none chosen, backfire
+  //     choice    a wrong choice (or an inequality sign the wrong way round) is a misfire
+  //   Across the measures: a sign flip (exactly the key with its sign flipped) is always a misfire, however small (§1l.6); an empty box is a misfire; an
+  //   answer that is not a number (or not the kind asked) is a backfire. A box that follows the student's own earlier value ('own') is
+  //   not counted again: its source box is.
+  //   Which measure: BoxDef.off.measure when the part sets it (A, D2); else a point is grid, a line's slope and start are fine, a num
+  //   with a unit is relative, a num that names a place (row, height, x, y, coordinate, exit, position) is grid, any other num is count
+  //   when its key is whole and fine when it is not. BoxDef.off = { measure, fizzle, misfire, slope, start, fizzleAt, backfireAt }:
+  //   fizzle and misfire in the measure's own terms (a distance, or a ratio for relative), and only with off.measure named (the
+  //   first API's ratio-term thresholds without a measure are ignored: E's count and grid measure what they stood in for); slope and start are { measure, fizzle,
+  //   misfire } for a line's two numbers; fizzleAt / backfireAt name near and wrong-kind choices.
+  //   C's finer rules, which never change E's name for a cast (they add words, or cover what the duel has no box for):
+  //     a power of ten off (×10, ×100, ×1000), already a backfire, says "check the units and the decimal point"; x and y swapped, or
+  //     a line's slope and start swapped, keep the name their distance gives and say so; an instrument reading (BoxDef.tol) is a fizzle
+  //     within 5 marks of its key (after the nudge band), the box's measure beyond.
+  //   why: plain words naming the box and how far off (e.g. "your slope was 1/4 off"); never the key, never the right value.
+  var OUTCOMES = ['true', 'fizzle', 'misfire', 'backfire'];
+  var MEASURES = { grid: { u: Q(1, 2) }, fine: { u: Q(1, 4) }, count: { u: Q(1, 1) }, relative: { rel: true } }, ABS_MISFIRE = 6;   // misfire within 6 u (E)
+  var PLACE = /\b(row|rows|height|heights|x|y|coordinate|exit|position|place)\b/i;
+  function absQ(q) { return Q(Math.abs(q.n), q.d); }
+  function fq(q, dec) {                                   // a rational in words: '1/4', '3', '0.25' when the student wrote decimals
+    q = absQ(q); if (q.d === 1) return String(q.n);
+    if (dec) { var d = q.d; while (d % 2 === 0) d /= 2; while (d % 5 === 0) d /= 5; if (d === 1) { var x = q.n / q.d, t = String(Math.round(x * 1e6) / 1e6); if (t.length <= 8) return t; } }
+    return q.n + '/' + q.d;
+  }
+  function fl(q) { return q.n / q.d; }
+  function rnd(x) { return x < 10 ? String(Math.round(x * 10) / 10) : String(Math.round(x)); }
+  function label(b, fallback) { var w = typeof b.word === 'string' ? b.word.trim() : ''; return /^the [a-z]/i.test(w) && w.length <= 40 ? 'the ' + w.slice(4).replace(/[:.,]+$/, '') : fallback; }
+  function pow10(x) { if (x < 9.999) return 0; var l = Math.log(x) / Math.LN10, r = Math.round(l); return Math.abs(l - r) < 1e-9 ? r : 0; }
+  function measureOf(b, k) {
+    var o = b.off || {}; if (MEASURES[o.measure]) return o.measure;
+    if (b.kind === 'point') return 'grid';
+    if (b.kind === 'line' || b.kind === 'vline') return 'fine';
+    if (b.unit) return 'relative';
+    if (PLACE.test(String(b.word || ''))) return 'grid';
+    return k && k.d === 1 ? 'count' : 'fine';
+  }
+  // one rational g against its key k by a measure -> { lvl 1..3, why, by, measure }; o = { fizzle, misfire } overrides
+  function numOff(g, k, meas, o, name, dec, tol) {
+    o = o && MEASURES[o.measure] ? o : {};     // a threshold counts only with the measure it is written in (off.measure): the ratio-term
+                                              // thresholds of the first API (A's countOff, D2's stepsOff) gave way to E's count and grid
+    var d = opQ(g, 'sub', k), ad = Math.abs(fl(d)), kk = fl(k), gk = fl(g), flip = kk !== 0 && eqQ(g, Q(-k.n, k.d)), lvl, why, by;
+    if (tol) { var t = parseQ(tol); if (t && ad <= 5 * fl(t) + 1e-12) return { lvl: 1, by: 'reading', measure: meas, why: name + ' was ' + fq(d, dec) + ' off the reading' }; }
+    if (meas === 'relative' && kk === 0) meas = 'fine';
+    if (meas === 'relative') {
+      var e = ad / Math.abs(kk), th = [typeof o.fizzle === 'number' ? o.fizzle : 0.1, typeof o.misfire === 'number' ? o.misfire : 1];
+      lvl = e <= th[0] + 1e-9 ? 1 : e <= th[1] + 1e-9 ? 2 : 3; by = 'relative';
+      var ratio = gk !== 0 && gk * kk > 0 ? Math.max(gk / kk, kk / gk) : 0, p10 = ratio ? pow10(ratio) : 0, pc = Math.round(e * 100);
+      why = p10 && lvl === 3 ? name + ' was off by a factor of ' + Math.pow(10, p10) + ': check the units and the decimal point'
+        : lvl === 3 && ratio >= 2 ? name + ' was off by a factor of about ' + rnd(ratio) : name + ' was ' + (pc < 1 ? 'less than 1' : pc) + '% off';
+      if (p10 && lvl === 3) by = 'kind';
+    } else {
+      var u = fl(MEASURES[meas].u), fz = typeof o.fizzle === 'number' ? o.fizzle : u, mf = typeof o.misfire === 'number' ? o.misfire : ABS_MISFIRE * u;
+      lvl = ad <= fz + 1e-9 ? 1 : ad <= mf + 1e-9 ? 2 : 3; by = meas;
+      why = name + ' was ' + fq(d, dec) + ' off';
+      if (lvl === 3 && meas === 'count' && gk * kk > 0) { var r10 = pow10(Math.max(gk / kk, kk / gk)); if (r10) { why = name + ' was off by a factor of ' + Math.pow(10, r10) + ': check the units and the decimal point'; by = 'kind'; } }
+    }
+    if (flip) { why = name + ' had the wrong sign'; by = 'sign'; lvl = 2; }        // a sign flip is always a misfire, however small (§1l.6: the spell goes the wrong way)
+    return { lvl: lvl, by: by, measure: meas, why: why };
+  }
+  function blank(v) { return v === undefined || v === null || (typeof v === 'string' && v.trim() === '') || (Array.isArray(v) && (v.length === 0 || v.every(blank))) || (v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length > 0 && Object.keys(v).every(function (k) { return blank(v[k]); })); }
+  function partly(v) { return Array.isArray(v) ? v.some(blank) : v && typeof v === 'object' ? Object.keys(v).some(function (k) { return blank(v[k]); }) : false; }
+  function boxOff(b, given) {                     // a wrong box -> { lvl 1..3, why, by, measure }
+    var name0 = b.kind === 'point' ? 'your point' : b.kind === 'line' ? 'your line' : b.kind === 'select' ? 'your choice of points' : label(b, 'your answer');
+    if (b.kind !== 'select' && (blank(given) || partly(given))) return { lvl: 2, by: 'empty', measure: null, why: name0 + ' was left empty' };
+    var g = read(b.kind, given), k = read(b.kind, b.key), dec = /\./.test(JSON.stringify(given));
+    if (!g || !k) return { lvl: 3, by: 'kind', measure: null, why: typeof given === 'string' ? '“' + given.slice(0, 24) + '” is not a number' : 'that was not the kind of answer asked for' };
+    var o = b.off || {}, meas = measureOf(b, Array.isArray(k) ? k[0] : null);
+    if (b.kind === 'num') return numOff(g[0], k[0], meas, o, label(b, 'your answer'), dec, b.tol);
+    if (b.kind === 'vline') return numOff(g[0], k[0], meas, o, 'your line', dec);
+    if (b.kind === 'point') {
+      var xs = g[0], ys = g[1], rx = eqQ(xs, k[0]) ? null : numOff(xs, k[0], meas, o, 'your x', dec), ry = eqQ(ys, k[1]) ? null : numOff(ys, k[1], meas, o, 'your y', dec);
+      var wp = !rx ? ry : !ry ? rx : ry.lvl > rx.lvl ? ry : rx;
+      var dist = Math.max(Math.abs(fl(opQ(xs, 'sub', k[0]))), Math.abs(fl(opQ(ys, 'sub', k[1]))));
+      var why = wp.by === 'sign' && (!rx || !ry) ? 'one coordinate of your point had the wrong sign' : 'your point was ' + fq(Q(Math.round(dist * 1e6), 1e6), dec) + ' off';
+      if (eqQ(xs, k[1]) && eqQ(ys, k[0]) && !eqQ(k[0], k[1])) { why = 'your x and y were swapped'; return { lvl: wp.lvl, by: 'swap', measure: meas, why: why }; }
+      return { lvl: wp.lvl, by: wp.by, measure: meas, why: why + (rx && ry && wp.by !== 'sign' ? ' (x and y both)' : '') };
+    }
+    if (b.kind === 'line') {
+      var so = o.slope || o, to = o.start || o;
+      var ms = eqQ(g[0], k[0]) ? null : numOff(g[0], k[0], MEASURES[so.measure] ? so.measure : 'fine', so, 'your slope', dec);
+      var bs = eqQ(g[1], k[1]) ? null : numOff(g[1], k[1], MEASURES[to.measure] ? to.measure : 'fine', to, 'your start', dec);
+      var w = !ms ? bs : !bs ? ms : bs.lvl > ms.lvl ? bs : ms;
+      if (ms && bs && eqQ(g[0], k[1]) && eqQ(g[1], k[0])) return { lvl: w.lvl, by: 'swap', measure: 'fine', why: 'your slope and start were swapped' };
+      return ms && bs ? { lvl: w.lvl, by: w.by, measure: w.measure, why: w.why + (w === ms ? ', and the start too' : ', and the slope too') } : w;
+    }
+    if (b.kind === 'select') {
+      var ks = k.set, gs = g.set, good = gs.filter(function (x) { return ks.indexOf(x) >= 0; }).length, bad = gs.length - good, miss = ks.length - good;
+      if (!gs.length) return { lvl: 3, by: 'set', measure: 'set', why: 'nothing was chosen' };
+      if (!bad) return { lvl: 1, by: 'set', measure: 'set', why: 'all your choices were right, but ' + miss + ' of the ' + ks.length + (miss === 1 ? ' was' : ' were') + ' left out' };
+      return { lvl: bad <= good ? 2 : 3, by: 'set', measure: 'set', why: bad + ' of your ' + gs.length + ' choices ' + (bad === 1 ? 'was' : 'were') + ' not right' };
+    }
+    if (b.kind === 'choice') {
+      var id = g.text;
+      if ((o.fizzleAt || []).indexOf(id) >= 0) return { lvl: 1, by: 'choice', measure: 'choice', why: 'a near choice, but not the one' };
+      if ((o.backfireAt || []).indexOf(id) >= 0) return { lvl: 3, by: 'kind', measure: 'choice', why: 'that choice is the wrong kind of answer' };
+      return { lvl: 2, by: 'choice', measure: 'choice', why: 'that was not the right choice' };
+    }
+    return { lvl: 2, by: 'form', measure: null, why: 'that was not the same as what was asked' };
+  }
+  function outcome(cast, keyed, ctx) {
+    ctx = ctx || {};
+    if (!(ctx.committed === true || (cast && cast.committed === true))) return { id: null, why: null, wait: 'commit' };
+    if (!cast || !keyed) return null;
+    if (cast.verdict === 'nudge') return null;
+    var defs = {}; (keyed.boxes || []).forEach(function (b) { defs[b.id] = b; });
+    var cboxes = cast.boxes || [], givens = {};
+    Object.keys(cast.givens || {}).forEach(function (k) { givens[k] = cast.givens[k]; });
+    cboxes.forEach(function (x) { if (x && x.given !== undefined && givens[x.id] === undefined) givens[x.id] = x.given; });
+    var ids = (cboxes.length ? cboxes.map(function (x) { return x.id; }) : Object.keys(givens)).filter(function (i) { return defs[i]; });
+    // the readable boxes are scored (or keep the record's own states); an empty or unreadable box is named by its kind
+    var readable = ids.filter(function (i) { return read(defs[i].kind, givens[i]) !== null; }), states = {};
+    var scoredAll = cast.verdict !== 'format' && cboxes.length && cboxes.every(function (x) { return typeof x.state === 'string'; });
+    if (scoredAll) cboxes.forEach(function (x) { states[x.id] = { state: x.state, ownOf: x.ownOf || null }; });
+    else if (readable.length) {
+      var sc = scoreCast({ boxes: readable.map(function (i) { return defs[i]; }) }, givens, { casting: ctx.casting || cast.casting, nudged: ctx.nudged, equiv: ctx.equiv });
+      if (sc.verdict === 'nudge') return null;
+      sc.boxes.forEach(function (x) { states[x.id] = { state: x.state, ownOf: x.ownOf }; });
+    }
+    var worst = null, wrong = 0;
+    ids.forEach(function (i) {
+      var st = states[i], b = defs[i];
+      if (st && (st.state === 'held' || st.state === 'held2' || st.state === 'lent')) return;
+      if (st && st.state === 'own' && st.ownOf && states[st.ownOf] && states[st.ownOf].state === 'notyet') return;    // its source is counted
+      var r = boxOff(b, givens[i]); wrong++;
+      if (!worst || r.lvl > worst.lvl) { worst = r; worst.box = i; }
+    });
+    if (!worst) return { id: 'true', why: 'True cast: every answer is right.', box: null, by: null, measure: null, wrong: 0 };
+    var why = worst.why.charAt(0).toUpperCase() + worst.why.slice(1) + (wrong > 1 ? ' (and ' + (wrong - 1) + ' more ' + (wrong === 2 ? 'answer was' : 'answers were') + ' off)' : '') + '.';
+    return { id: OUTCOMES[worst.lvl], why: why, box: worst.box, by: worst.by, measure: worst.measure, wrong: wrong };
+  }
+  outcome.measureOf = function (b) { var k = read(b.kind, b.key); return measureOf(b, Array.isArray(k) ? k[0] : null); };
 
   // ---- results, from scored records only
   var RANK = { held: 4, held2: 3, own: 2, lent: 1, notyet: 0 };
@@ -65973,7 +66229,7 @@ var MEASURE = (function () {
     return { halls: halls, field: field, regions: L.regions, laws: { passage: L.passage, ascension: L.ascension, counts: L.counts }, judgement: (att.asks || []).map(function (a) { return { terr: a.terr, outcome: a.outcome, pi: a.pi, why: a.why }; }),
       arenas: arenas(recs, { rep: opts.rep, tempo: opts.tempo, verdicts: L.verdicts }), skills: skillsOf(recs) };
   }
-  return { STATES: K.STATES, scoreCast: scoreCast, result: result, finalStates: finalStates, parseQ: parseQ, _scored: scored,
+  return { STATES: K.STATES, scoreCast: scoreCast, outcome: outcome, OUTCOMES: OUTCOMES, result: result, finalStates: finalStates, parseQ: parseQ, _scored: scored,
     posterior: posterior, territories: territories, verdicts: verdicts, skills: skillsOf, judgeAsks: judgeAsks, laws: laws, arenas: arenas, attemptResult: attemptResult, regionOf: regionOf };
 })();
 if (typeof module !== 'undefined') module.exports = MEASURE;
@@ -271749,6 +272005,21 @@ var HTG = (function () {
     castPart(host, got.casting, got.part, { surface: it.kind === 'forge' ? 'forge' : it.kind === 'bench' ? 'bench' : 'drill', strength: strength, item: it, R: R, kicker: (it.kind === 'forge' ? cap(N().places.forge) : it.kind === 'bench' ? N().session.movements.bench + ' · ' + inst : N().session.movements.drill) + ' · ' + RUNES.name(it.rune) + ' (' + it.rune + ')' });
   }
 
+  /* ---- the words after a cast (POLICY §1l.4-6). A whole-spell cast (the Forge, "Cast it whole" and its crown, the Rehearsal Halls,
+     the Audience) is named as a casting by C's MEASURE.outcome after its commit: a true cast, a fizzle, a misfire or a backfire, with
+     how far off in words. A rune step, the Bench, a Drill and the Warm keep skill words: what was exact, what slipped and where.
+     Words only: no cost outside the duel, and held / held2 / lent and the evidence are unchanged underneath. */
+  var WHOLE = { forge: 1, spell: 1, rehearsal: 1, audience: 1 }, OCW = { 'true': 'True cast', fizzle: 'Fizzle', misfire: 'Misfire', backfire: 'Backfire' };
+  function outcomeOf(cast, keyed, casting, nudged) { try { var oc = typeof MEASURE.outcome === 'function' ? MEASURE.outcome(cast, keyed, { committed: true, casting: casting, nudged: nudged }) : null; return oc && oc.id ? oc : null; } catch (e) { return null; } }
+  function sentence(t) { t = String(t || '').trim(); return t ? t.charAt(0).toUpperCase() + t.slice(1) + (/[.!?]$/.test(t) ? '' : '.') : ''; }
+  function castWords(oc) { return oc ? OCW[oc.id] + '.' + (oc.id === 'true' ? ' Every number is exact.' : ' ' + sentence(oc.why)) : ''; }
+  function skillWords(res, part, g) {   // what was exact, what slipped and where (never the right value)
+    if (res && res.verdict === 'held') return 'Exact. ' + (part.boxes.length > 1 ? 'Every number is right.' : 'The number is right.');
+    var bx = (res && res.boxes || []).filter(function (x) { return x.state !== 'held' && x.state !== 'held2'; }), tag = bx.map(function (x) { return x.tag && typeof MAGE_TAGS !== 'undefined' ? MAGE_TAGS.say(x.tag) : ''; }).filter(Boolean)[0];
+    var oc = outcomeOf({ givens: g }, part, 'first'), exact = part.boxes.length - bx.length;
+    return ('Not exact yet. ' + (oc ? sentence(oc.why) + ' ' : '') + (tag ? tag + ' ' : '') + (exact > 0 && part.boxes.length > 1 ? exact + ' of ' + part.boxes.length + ' numbers were exact.' : '')).trim();
+  }
+
   /* ---- one casting of one part: B's STAGE, C's scorer, D's record */
   function castPart(host, casting, part, o) {
     var box0 = part.boxes[0], isLine = box0.kind === 'line', t0 = Date.now(), firstId = null, firstVerdict = null, aided = !!SES.aided[box0.terr];
@@ -271760,23 +272031,26 @@ var HTG = (function () {
     var st = STAGE.mount(shell, {
       kicker: o.kicker + (aided ? ' · aided' : '') + (o.second ? ' · second casting, other numbers' : ''), prompt: esc(part.prompt), look: isLine ? 'beam' : (LOOK[part.look] || 'seal'), plane: plane, plan: plan || undefined, inst: inst || undefined,
       boxes: stageBoxes(part),
-      mode: o.second ? 'hall' : 'tg',
-      score: function (vals, c) { st._vals = vals; var g = gather(part, vals); var res = MEASURE.scoreCast(part, g, { casting: o.second ? 'second' : 'first' }); shell._res = res; shell._g = g; return res; },
+      mode: o.second ? 'hall' : 'tg', whole: !!WHOLE[o.surface],
+      score: function (vals, c) { st._vals = vals; var g = gather(part, vals); var res = MEASURE.scoreCast(part, g, { casting: o.second ? 'second' : 'first' }); shell._res = res; shell._g = g;
+        if (WHOLE[o.surface] && res && res.verdict !== 'nudge' && res.verdict !== 'format') res.outcome = outcomeOf({ givens: g }, part, o.second ? 'second' : 'first');   // read only now, at the commit
+        return res; },
       onSettled: function (s) {
         clearInterval(tick);
         var again = s.casting === 'again', rec = record(part, casting, o, shell._res, shell._g, again ? 'again' : (o.second ? 'second' : 'first'), again ? firstId : null, t0, aided && !again);
         if (!again) { firstId = rec.id; firstVerdict = s.verdict; if (aided) delete SES.aided[box0.terr]; } else SES.aided[box0.terr] = true;
-        if (!again && o.typed) o.typed[part.id] = { vals: st._vals || {}, verdict: s.verdict };
+        var oc = shell._res && shell._res.outcome || null; if (!again && oc && SES) { SES.oc = SES.oc || {}; SES.oc[rec.id] = oc.id; }
+        if (!again && o.typed) o.typed[part.id] = { vals: st._vals || {}, verdict: s.verdict, outcome: oc };
         if (!again && o.origin) part.boxes.forEach(function (b) { if (s.verdict === 'held') o.origin[part.id + '.' + b.id] = 'held2'; });
         if (!again && o.spent) part.boxes.forEach(function (b) { var ref = part.id + '.' + b.id; if (o.second) { if (s.verdict === 'held') o.spent[ref] = 'held2'; } else o.spent[ref] = s.verdict === 'held' ? 'held' : 'lent'; });   // the roll: what later parts draw   // v5 §9: the NEXT attempt on this rune this session is aided (once)
         HMG.addRecord(SES.id, SES.region, rec, SES.events); if (SES.live) SES.live.commit(rec, rec.t);
         if (!again && o.item) SES.done[o.item.id] = true;
-        var R2 = HMG.reading(); updateConsole(R2);
+        var said = again ? '' : WHOLE[o.surface] ? (s.outcome ? '' : castWords(oc)) : skillWords(shell._res, part, shell._g || {}), R2 = HMG.reading(); updateConsole(R2);
         var acts = shell.querySelector('.htg-after') || shell.appendChild(Object.assign(document.createElement('div'), { className: 'htg-after' }));
         if (!again && s.verdict !== 'held' && !o.second) {
-          acts.innerHTML = '<button type="button" class="hmg-btn primary" data-second>Second casting · other numbers</button>';
+          acts.innerHTML = (said ? '<p class="hmg-note htg-said">' + esc(said) + '</p>' : '') + '<button type="button" class="hmg-btn primary" data-second>Second casting · other numbers</button>';
           acts.querySelector('[data-second]').addEventListener('click', function () { acts.innerHTML = ''; var tw = MAGE_GENS.twin(casting), tp = tw.parts.filter(function (x) { return x.id === part.id; })[0]; castPart(host, tw, tp, Object.assign({}, o, { second: true, R: R2, spent: null, origin: o.spent })); });
-        } else if (!again) acts.innerHTML = '<p class="hmg-note">' + (s.verdict === 'held' ? 'Held.' : 'Recorded.') + (o.onDone ? '' : ' Choose the next problem above, or another movement.') + '</p>';
+        } else if (!again) acts.innerHTML = '<p class="hmg-note htg-said">' + esc(said || 'Recorded.') + (o.onDone ? '' : ' Choose the next problem above, or another movement.') + '</p>';
         if (!again && o.onDone) o.onDone(s.verdict);
       }
     });
@@ -271895,7 +272169,9 @@ var HTG = (function () {
       var pick = [].slice.call(shell.querySelectorAll('input:checked')).map(function (x) { return x.value; }), g = {}; g[b.id] = pick;
       var res = MEASURE.scoreCast(part, g, { casting: o.second ? 'second' : 'first' }), rec = record(part, casting, o, res, g, o.second ? 'second' : 'first', null, t0, false);
       HMG.addRecord(SES.id, SES.region, rec, SES.events); if (SES.live) SES.live.commit(rec, rec.t); shell.querySelector('[data-cast]').disabled = true;
-      shell.querySelector('.htg-say').textContent = res.verdict === 'held' ? 'Held. Every point you chose lies on the ring.' : 'Not yet. The ring of the sounding does not pass through exactly those points.';
+      var oc = WHOLE[o.surface] ? outcomeOf({ givens: g }, part, o.second ? 'second' : 'first') : null; if (oc && SES) { SES.oc = SES.oc || {}; SES.oc[rec.id] = oc.id; } if (o.typed) o.typed[part.id] = { vals: g, verdict: res.verdict, outcome: oc };
+      shell.querySelector('.htg-say').textContent = oc ? castWords(oc) + (oc.id === 'true' ? ' Every point you chose lies on the ring.' : ' The ring of the sounding does not pass through exactly those points.')
+        : res.verdict === 'held' ? 'Exact. Every point you chose lies on the ring.' : 'Not exact yet. The ring of the sounding does not pass through exactly those points.';
       updateConsole(HMG.reading()); if (o.onDone) o.onDone(res.verdict);
     });
   }
@@ -271925,7 +272201,7 @@ var HTG = (function () {
       else if (b.kind === 'point') boxes.push({ id: b.id + '.x', before: wd + ': x =', aria: wd + ', x' }, { id: b.id + '.y', before: 'y =', aria: wd + ', y' });
       else boxes.push({ id: b.id, before: wd + (b.unit ? ' (' + b.unit + ')' : ''), aria: wd }); });
     function giv(vals) { var g = {}; v.boxes.forEach(function (b) { g[b.id] = b.kind === 'line' ? { m: vals.m, b: vals.b } : b.kind === 'point' ? [vals[b.id + '.x'], vals[b.id + '.y']] : vals[b.id]; }); return g; }
-    return STAGE.mount(host, { kicker: kicker, prompt: esc(v.prompt), look: 'seal', plan: v.draw && !v.inst && typeof MMPlan !== 'undefined' ? v.draw : undefined, inst: v.inst || undefined, boxes: boxes, mode: 'hall',
+    return STAGE.mount(host, { kicker: kicker, prompt: esc(v.prompt), look: 'seal', plan: v.draw && !v.inst && typeof MMPlan !== 'undefined' ? v.draw : undefined, inst: v.inst || undefined, boxes: boxes, mode: 'hall', whole: true,
       score: function (vals) { return castFn(giv(vals)); }, onSettled: onSettled });
   }
   function castOn(eng, s, v, givens, region, nudgeEl) {
@@ -271934,7 +272210,9 @@ var HTG = (function () {
     if (sc.verdict === 'nudge') { NUDGED[nk] = (NUDGED[nk] || []).concat(sc.nudge || []); if (nudgeEl) nudgeEl.textContent = 'Check your reading once more, then Cast again. Nothing is spent yet.'; throw new Error('nudge'); }
     if (nudgeEl) nudgeEl.textContent = '';
     var rec = eng.envelope(s, givens, Date.now()); rec.boxes.forEach(function (b) { var x = sc.boxes.filter(function (y) { return y.id === b.id; })[0]; b.state = x.state; b.credit = x.credit; b.tag = x.tag; b.ownOf = x.ownOf; });
-    rec.verdict = sc.verdict; eng.commit(s, rec); HMG.addRecord(s.id, region, rec, null); return { verdict: sc.verdict };
+    rec.verdict = sc.verdict; var oc = outcomeOf(rec, eng.keyed(s), v.casting, NUDGED[nk] || []);   // read before the commit moves the sitting on
+    eng.commit(s, rec); HMG.addRecord(s.id, region, rec, null);
+    return { verdict: sc.verdict, outcome: oc };
   }
   function rehearsal(body, R, rid) {
     var L = R.level ? R.level.L : 0, ok = L >= 13 || HMG.isPreview(), have = typeof REHEARSAL !== 'undefined', all = sittings(), n = have ? REHEARSAL.sealedCount(all) : 0;
@@ -271980,7 +272258,7 @@ var HTG = (function () {
     body.innerHTML = '<p><a href="#tg/rehearsal">← Back</a></p><div class="hmg-card hmg-night"><span class="mm-kicker">An Audience</span><h2>' + esc(RUNES.name(T)) + '</h2><div class="htg-rhpart"></div><p class="htg-nudge" role="status"></p><div class="htg-next"></div></div>';
     var ph = body.querySelector('.htg-rhpart'), nudge = body.querySelector('.htg-nudge'), nx = body.querySelector('.htg-next');
     function step() { ph.innerHTML = ''; nx.innerHTML = ''; var v = AUDIENCE.show(au);
-      if (!v) { ph.innerHTML = '<p>' + (au.outcome === 'held' || au.outcome === 'held2' ? 'Held. ' + esc(RUNES.name(T)) + ' now counts toward your passage.' : 'Not yet. Hold it afresh in the Training Ground and come again.') + '</p>'; return; }
+      if (!v) { ph.innerHTML = '<p>' + (au.outcome === 'held' || au.outcome === 'held2' ? esc(RUNES.name(T)) + ' now counts toward your passage.' : esc(RUNES.name(T)) + ' does not count yet. Hold it afresh in the Training Ground and come again.') + '</p>'; return; }
       stageFor(ph, v, 'Before Rhadamanthus' + (v.casting === 'second' ? ' · second ask' : ''), function (g) { return castOn(AUDIENCE, au, v, g, 'audience', nudge); }, function () { nx.innerHTML = '<button type="button" class="hmg-btn primary" data-next>Next</button>'; nx.querySelector('[data-next]').addEventListener('click', step); });
     }
     step();
@@ -272086,6 +272364,14 @@ var HTG = (function () {
     draw(-1);
   }
   // (3) the whole spell, part by part on the rolling plane; then the student's own spell plays back as the opening did
+  // the whole spell is named by its worst part (as a Hall names a cast by its worst box): every part a true cast is a true cast
+  function wholeWords(casting, typed) {
+    var RANK = { 'true': 0, fizzle: 1, misfire: 2, backfire: 3 }, worst = null, wi = -1, n = 0;
+    casting.parts.forEach(function (p, i) { var oc = typed[p.id] && typed[p.id].outcome; if (!oc) return; n++; if (!worst || RANK[oc.id] > RANK[worst.id]) { worst = oc; wi = i; } });
+    if (!worst) return 'Your casting, part by part.';
+    if (worst.id === 'true') return n === casting.parts.length ? 'True cast. Every part of the spell is exact.' : 'Every part you cast is exact.';
+    return OCW[worst.id] + ' in part ' + (wi + 1) + '. ' + sentence(worst.why);
+  }
   function castWhole(box, sp, it, R, demo, canPlan, strength) {
     strength = strength || 'full'; var casting = MAGE_GENS.make(sp.id, strength, strength === 'crown' ? (it.seed * 7 + 13) % 999983 : it.seed), i = 0, spent = {}, typed = {};
     box.innerHTML = '<p class="hmg-note">Cast the whole spell: ' + casting.parts.length + ' parts, one after another' + (uniform(casting) ? ', on one plane' : '') + '. <a href="#codex/' + esc(sp.id) + '">How to cast it</a></p><div class="htg-part"></div><div class="htg-next"></div>';
@@ -272095,7 +272381,7 @@ var HTG = (function () {
         onDone: function () { if (i < casting.parts.length - 1) { nx.innerHTML = '<button type="button" class="hmg-btn primary" data-next>Next part</button>'; nx.querySelector('[data-next]').addEventListener('click', function () { i++; next(); }); } else whole(); } });
     }
     function whole() {
-      nx.innerHTML = '<div class="htg-whole"><h3>Your spell, whole</h3><div class="htg-see-plane"></div><p class="hmg-note">Each part as you cast it: the parts that held, cast again in light; a part that was not yet is drawn as the course lent it.</p>' + (strength === 'full' && MAGE_GENS.has(sp.id, 'crown') ? '<div class="hob-row"><button type="button" class="hmg-btn" data-crown>Cast it at crown strength</button></div>' : '') + '</div>';
+      nx.innerHTML = '<div class="htg-whole"><h3>Your spell, whole</h3><p class="htg-said"><b>' + esc(wholeWords(casting, typed)) + '</b></p><div class="htg-see-plane"></div><p class="hmg-note">Each part as you cast it: the true casts, cast again in light; a part that did not cast true is drawn as the course lent it.</p>' + (strength === 'full' && MAGE_GENS.has(sp.id, 'crown') ? '<div class="hob-row"><button type="button" class="hmg-btn" data-crown>Cast it at crown strength</button></div>' : '') + '</div>';
       var cb = nx.querySelector('[data-crown]'); if (cb) cb.addEventListener('click', function () { castWhole(box, sp, it, R, demo, canPlan, 'crown'); box.scrollIntoView({ block: 'start' }); });
       var host = nx.querySelector('.htg-see-plane'); if (!canPlan || !MMPlan.playback) { panels(host, casting, stepsOf(sp, casting), 'whole', typed, spent); nx.scrollIntoView({ block: 'nearest' }); return; }
       var held = function (p) { var tp = typed[p.id]; return !!tp && tp.verdict === 'held'; }, vals = {};
@@ -272114,9 +272400,21 @@ var HTG = (function () {
     var rd = SES.live.readings({ stages: stg, level: HMG.levelBar(R) }), WW = { part: 'after a part', none: 'no misses yet', full: 'after a full cast', est: 'no usual time', events: 'after a session', model: 'waits' };
     ['precision', 'recovery', 'sovereign', 'grit', 'adapt'].forEach(function (k) { var d = rd[k]; if (!d) return; if (d.wait) d.wait = WW[d.wait] || (d.wait === true ? 'waits' : d.wait); else d.text = Math.round(d.f * 100) + '%'; });
     rd.pips = (rd.pips || []).concat([null]).slice(-8); rd.note = HMG.isPreview() ? 'preview' : 'this session';
+    var last = SES.oc && HMG.sessionRecords(SES.id).filter(function (r) { return SES.oc[r.id]; }).pop(); if (last) rd.note += ' · last spell cast: ' + OCW[SES.oc[last.id]].toLowerCase();
     SES.con.update(rd);
   }
-  function sessionSummary() { var recs = HMG.sessionRecords(SES.id).filter(function (r) { return r.casting !== 'again'; }), held = recs.filter(function (r) { return r.verdict === 'held'; }).length; return recs.length ? 'This session: ' + recs.length + ' casting' + (recs.length > 1 ? 's' : '') + ', ' + held + ' held. Closing it counts toward Grit (a session finished).' : 'Nothing cast yet. Closing still counts the session as opened and finished.'; }
+  // the session in words: whole casts by their casting words, rune work (Warm, Drill, Bench, rune steps) by how much was exact
+  function sessionSummary() {
+    var recs = HMG.sessionRecords(SES.id).filter(function (r) { return r.casting !== 'again'; }); if (!recs.length) return 'Nothing cast yet. Closing still counts the session as opened and finished.';
+    var oc = SES.oc || {}, cnt = { 'true': 0, fizzle: 0, misfire: 0, backfire: 0 }, whole = 0, skill = recs.filter(function (r) { return !WHOLE[r.surface]; }), exact = skill.filter(function (r) { return r.verdict === 'held'; }).length;
+    recs.forEach(function (r) { if (WHOLE[r.surface] && oc[r.id]) { whole++; cnt[oc[r.id]]++; } });
+    var PL = { 'true': ['true cast', 'true casts'], fizzle: ['fizzle', 'fizzles'], misfire: ['misfire', 'misfires'], backfire: ['backfire', 'backfires'] };
+    var parts = [];
+    if (whole) parts.push('spells cast: ' + ['true', 'fizzle', 'misfire', 'backfire'].filter(function (k) { return cnt[k]; }).map(function (k) { return cnt[k] + ' ' + PL[k][cnt[k] > 1 ? 1 : 0]; }).join(', '));
+    if (skill.length) parts.push('rune work: ' + exact + ' of ' + skill.length + ' exact');
+    var other = recs.length - whole - skill.length; if (other > 0) parts.push(other + ' more casting' + (other > 1 ? 's' : ''));
+    return 'This session: ' + parts.join('; ') + '. Closing it counts toward Grit (a session finished).';
+  }
 
   function view(body, R, parts) {
     if (parts[0] === 'cave') return cave(body, R);
@@ -272193,7 +272491,7 @@ var HTG = (function () {
     st.worked = worked; st.caption = 'The finished spell, worked on its own numbers.';
     return st;
   }
-  return { view: view, CSS: CSS, cardPicture: cardPicture, stillOf: stillOf, _rh: { castOn: castOn, sittings: sittings }, _planOf: planOf, _partFor: function (T, s, seed) { var keep = SES; SES = SES || { spell: null }; var r = partFor(T, s, seed); SES = keep; return r; }, _record: record };
+  return { view: view, CSS: CSS, cardPicture: cardPicture, stillOf: stillOf, _rh: { castOn: castOn, sittings: sittings }, _words: { castWords: castWords, skillWords: skillWords, wholeWords: wholeWords, outcomeOf: outcomeOf, WHOLE: WHOLE }, _planOf: planOf, _partFor: function (T, s, seed) { var keep = SES; SES = SES || { spell: null }; var r = partFor(T, s, seed); SES = keep; return r; }, _record: record };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = HTG;
 /* ===== HTG END ===== */
